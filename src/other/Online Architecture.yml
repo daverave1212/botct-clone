@@ -1,0 +1,89 @@
+Power Types:
+  - Nightly Info
+  - Setup Info
+  
+  - Nightly Choose Player
+
+  - OnDeath(source)
+
+  - Active Power
+
+Special Cases:
+  - Drunk
+  - Baron
+  - Scarlet Woman (on hook from Demon)
+
+Not Implemented Powers:
+  - Virgin
+  - Artist
+  - Slayer
+
+Skipped Boring Roles:
+  - Butler
+  - Recluse
+
+
+
+
+
+Pages:
+
+  Main Page:
+    - Offline Game
+    - Play Online
+
+  play-online:
+    - Name: ...
+    - Icon: ...
+    - Join
+    - Create: (POST /game) then redirect to hosted-game
+  
+  Game:
+    - Displays game state at all times.
+    - Refresh: GET /game
+    - Per Player:
+      - Remove (host only): DELETE /player
+    - Start Game (host only): POST /start
+        This will start a short countdown
+        Players have 20 seconds to do their setup
+        After 20 seconds, game will go to day phase
+    - End Day (host only): POST /night
+
+
+
+Routes:
+  POST /game:
+    - Input: { playerName: Calin }
+    - Returns: { roomCode: xyz }
+  GET /game:
+    - Input: { playerName: Calin, roomCode: xyz }
+    - Returns the whole game state
+
+  POST /player:
+    - Input: { playerName: Calin, roomCode: xyz }
+    - Returns: { status: 200 }
+  DELETE /player:
+    - Input: { playerName: Calin, roomCode: xyz }
+    - Returns: { status: 200 }
+
+  POST /start:
+    - Input: { playerName: Calin, roomCode: xyz }
+    - Roles are automatically assigned
+    - The game goes to the setup phase
+    - After 20 seconds, game goes to the day phase
+  
+  POST /night:
+    - Input: { playerName: Calin, roomCode: xyz }
+    - The game goes to the setup phase
+    - After 20 seconds, game goes to the day phase
+
+Objects:
+
+  Game:
+    players[]:
+      name: Dave
+      icon: Blue
+      roleName: null
+      isDead: false
+      
+

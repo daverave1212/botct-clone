@@ -1,0 +1,1 @@
+python resize-all.py

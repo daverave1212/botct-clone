@@ -1,0 +1,45 @@
+<script>
+
+    import { createEventDispatcher, onMount } from 'svelte'
+    import { page, navigating } from '$app/stores'
+    import './Contact.css'
+    import { addedPlayers } from '../../stores/added-players-store';
+
+    export let name
+    export let src
+    export let isDead
+
+    let isExpanded = false
+
+    let _subtitleInputValue
+    let domInput
+
+    $: SUBCONTENT_CLASS = isExpanded ? 'subcontent subcontent--expanded' : 'subcontent'
+
+
+    function toggleContent() {
+        isExpanded = !isExpanded
+    }
+
+</script>
+
+
+<div class="contact shadowed rounded">
+    <div class="header">
+        <div class="picture-wrapper" on:click={toggleContent}>
+            <!-- svelte-ignore a11y-missing-attribute -->
+            <img
+                src={src == null? 'images/user.png' : src}
+                class="center"
+            />
+        </div>
+        <div class="right-wrapper">
+            <span class="subtitle" on:click={toggleContent}>{name}</span>
+        </div>
+    </div>
+    <div class="{SUBCONTENT_CLASS}">
+        <div class="subcontent-content">
+            <slot></slot>
+        </div>
+    </div>
+</div>

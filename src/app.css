@@ -1,0 +1,60 @@
+
+*, body {
+    vertical-align: top;
+    box-sizing: border-box;
+    padding: 0px;
+    margin: 0px;
+
+    font-family: BaseFont;
+}
+
+input {
+    font-size: 16px;
+    padding: 1rem;
+}
+
+label {
+    font-size: 1rem;
+    line-height: 1rem;
+}
+input[type="checkbox"] {
+    height: 1rem;
+    transform: scale(1.25, 1.25);
+    margin-right: 0.25rem;
+}
+
+.search-input {
+    display: block;
+    width: 80%;
+
+    margin: auto;
+    margin-top: 2vh;
+    margin-bottom: 2vh;
+    padding: 1rem;
+}
+
+.contact-list-header {
+    width: 100%;
+    height: calc(var(--contact-header-height) * 1.5);
+
+    display: flex;
+    justify-content: end;
+    padding: 1rem;
+    gap: 0.5rem;
+}
+
+.role-list {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.qr-code {
+    width: 75vw;
+}
+
+@font-face {
+    font-family: BaseFont;
+    src: url('fonts/SF-Pro-Text-Regular.otf');
+}

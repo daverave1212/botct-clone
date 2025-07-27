@@ -1,0 +1,1345 @@
+import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, times } from "./utils"
+import { browser } from '$app/environment'
+
+export const WEREWOLVES = 'werewolves'
+export const TOWNSFOLK = 'townsfolk'
+export const OTHER = 'other'
+
+export const TROUBLE_BREWING = 0
+export const BAD_MOON_RISING = 1
+export const SECTS_AND_VIOLETS = 1.5
+export const INTERMEDIATE = 2
+export const EXPERIMENTAL = 2.25
+export const ADVANCED = 9
+
+
+export const COMPLETE = -124172
+
+export const difficultyNames = {
+    [TROUBLE_BREWING]: 'Trouble Brewing',
+    [BAD_MOON_RISING]: 'Bad Moon Rising',
+    [SECTS_AND_VIOLETS]: 'Sects and Violets',
+    [EXPERIMENTAL]: 'Experimental',
+    
+    [INTERMEDIATE]: '--Intermediate',
+    [ADVANCED]: 'Zzz...',
+    [COMPLETE]: '--Complete',
+}
+setTimeout(() => {
+    const usedDifficultyLetters = Object.keys(difficultyNames)
+        .filter(dfc => difficultyNames[dfc].startsWith('--') == false)
+        .map(dfc => difficultyNames[dfc])
+        .map(name => name.charAt(0))
+    
+
+}, 1500)
+export function getFirstLetterOfDifficulty(difficulty) {
+    return difficultyNames[difficulty].substring(0, 1)
+}
+export function getDifficultyByFirstLetter(firstLetter) {
+    firstLetter = firstLetter.toUpperCase()
+    for (const difficulty of Object.keys(difficultyNames)) {
+        if (difficultyNames[difficulty].startsWith(firstLetter)) {
+            return difficulty
+        }
+    }
+    return BAD_MOON_RISING
+}
+export const difficultyDescriptions = {
+    [TROUBLE_BREWING]: 'These are all the Evils in the game. Not all may be used in the game you are playing. For example, Vampires are only used for 7 or 8 players.',
+    [BAD_MOON_RISING]: 'Use these roles for the base game. The app will help you keep the game running with tips!',
+    [SECTS_AND_VIOLETS]: 'Add these simple roles to the game for extra spice!',
+    [EXPERIMENTAL]: 'Balanced, easy to understand roles to make the game more intriguing! Who will be who?',
+    [INTERMEDIATE]: 'Extra roles to add to make it more interesting. Every game, there should NOT be both a Town Guard and a Priest (unless there are more than 15 players). You don\'t have to play with all of them. Only choose which roles you like to play with.',
+    [ADVANCED]: 'Roles for advanced players who know the game and want more challenge. Beware: having these roles in the game will make it more difficult to narrate!',
+    [COMPLETE]: 'Complete',
+}
+
+
+export const REGULAR = 'regular'
+export const REGULAR_NEGATIVE = 'regular-negative'
+export const SETUP = 'setup'
+export const NIGHTLY = 'nightly'
+export const SPECIAL_SETUP = 'special-setup'
+export const EVIL_SETUP = 'evil-setup'
+export const SPECIAL_NIGHTLY = 'special-nightly'
+export const OTHER_CATEGORY = 'other-category'
+
+export const NIGHTLY_WEREWOLVES = 'nightly-werewolves'
+
+export const EVIL_COLOR = 'rgb(194, 5, 30)'
+export const SETUP_COLOR = 'rgb(90, 138, 0)'
+export const NIGHTLY_COLOR = 'rgb(88, 50, 255)'
+export const MORNING_COLOR = 'rgb(200, 175, 50)'
+export const PINK_COLOR = '#CC55AA'
+export const SPECIAL_COLOR = '#444444'
+
+const isWorthBalanceAcceptable = worthBalanceFloat => worthBalanceFloat >= 0 && worthBalanceFloat <= 0.75
+
+export const STRIGOY = 'Strigoy'
+export const EVIL = 'Any Evil'
+export const NEGATIVE = 'Any Evil'
+// Rule of thumb: 25% of players are Strigoy
+export const evilsByPlayers = {
+    0:  [[STRIGOY]],
+    1:  [[STRIGOY]],
+    2:  [[STRIGOY]],
+    3:  [[STRIGOY]],
+    4:  [[STRIGOY]],
+    5:  [[STRIGOY]],
+    6:  [[STRIGOY, NEGATIVE]],
+    7:  [[STRIGOY, NEGATIVE]],
+
+    8:  [[STRIGOY, STRIGOY]],
+    9:  [[STRIGOY, STRIGOY]],
+    10: [[STRIGOY, STRIGOY, NEGATIVE]],
+    11: [[STRIGOY, STRIGOY, NEGATIVE]],
+
+    12: [[STRIGOY, STRIGOY, STRIGOY]],
+    13: [[STRIGOY, STRIGOY, STRIGOY, NEGATIVE]],
+    14: [[STRIGOY, STRIGOY, STRIGOY, NEGATIVE]],
+    15: [[STRIGOY, STRIGOY, STRIGOY, NEGATIVE, NEGATIVE]],
+
+    16: [[STRIGOY, STRIGOY, STRIGOY, STRIGOY]],
+    17: [[STRIGOY, STRIGOY, STRIGOY, STRIGOY, NEGATIVE]],
+    18: [[STRIGOY, STRIGOY, STRIGOY, STRIGOY, NEGATIVE]],
+    19: [[STRIGOY, STRIGOY, STRIGOY, STRIGOY, NEGATIVE, NEGATIVE]],
+
+    20: [[STRIGOY, STRIGOY, STRIGOY, STRIGOY, STRIGOY]],
+}
+
+export const getRoles = () => {
+    const roles = [
+        {
+            "name": "Acrobat",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose a player: if they are or become drunk or poisoned tonight, you die."
+        },
+        {
+            "name": "Alchemist",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You have a Minion ability. When using this, the Storyteller may prompt you to choose differently."
+        },
+        {
+            "name": "Alsaahir",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each day, if you publicly guess which players are Minion(s) and which are Demon(s), good wins."
+        },
+        {
+            "name": "Amnesiac",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You do not know what your ability is. Each day, privately guess what it is: you learn how accurate you are."
+        },
+        {
+            "name": "Artist",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Once per game, during the day, privately ask the Storyteller any yes/no question."
+        },
+        {
+            "name": "Atheist",
+            "difficulty": EXPERIMENTAL,
+            "effect": "The Storyteller can break the game rules, and if executed, good wins, even if you are dead. [No evil characters]"
+        },
+        {
+            "name": "Balloonist",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, you learn a player of a different character type than last night. [+0 or +1 Outsider]"
+        },
+        {
+            "name": "Banshee",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If the Demon kills you, all players learn this. From now on, you may nominate twice per day and vote twice per nomination.”"
+        },
+        {
+            "name": "Bounty Hunter",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing 1 evil player. If the player you know dies, you learn another evil player tonight. [1 Townsfolk is evil]"
+        },
+        {
+            "name": "Cannibal",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You have the ability of the recently killed executee. If they are evil, you are poisoned until a good player dies by execution."
+        },
+        {
+            "name": "Chambermaid",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night, choose 2 alive players (not yourself): you learn how many woke tonight due to their ability."
+        },
+        {
+            "name": "Chef",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You start knowing how many pairs of evil players there are."
+        },
+        {
+            "name": "Choirboy",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If the Demon kills the King, you learn which player is the Demon. [+the King]"
+        },
+        {
+            "name": "Clockmaker",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "You start knowing how many steps from the Demon to its nearest Minion."
+        },
+        {
+            "name": "Courtier",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Once per game, at night, choose a character: they are drunk for 3 nights & 3 days."
+        },
+        {
+            "name": "Cult Leader",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, you become the alignment of an alive neighbor. If all good players choose to join your cult, your team wins."
+        },
+        {
+            "name": "Dreamer",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct."
+        },
+        {
+            "name": "Empath",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night, you learn how many of your 2 alive neighbors are evil."
+        },
+        {
+            "name": "Engineer",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Once per game, at night, choose which Minions or which Demon is in play."
+        },
+        {
+            "name": "Exorcist",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, choose a player (different to last night): the Demon, if chosen, learns who you are then doesnt wake tonight."
+        },
+        {
+            "name": "Farmer",
+            "difficulty": EXPERIMENTAL,
+            "effect": "When you die at night, an alive good player becomes a Farmer."
+        },
+        {
+            "name": "Fisherman",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Once per game, during the day, visit the Storyteller for some advice to help your team win."
+        },
+        {
+            "name": "Flowergirl",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, you learn if a Demon voted today."
+        },
+        {
+            "name": "Fool",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "The 1st time you die, you dont."
+        },
+        {
+            "name": "Fortune Teller",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you."
+        },
+        {
+            "name": "Gambler",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, choose a player & guess their character: if you guess wrong, you die."
+        },
+        {
+            "name": "General",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, you learn which alignment the Storyteller believes is winning: good, evil, or neither."
+        },
+        {
+            "name": "Gossip",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each day, you may make a public statement. Tonight, if it was true, a player dies."
+        },
+        {
+            "name": "Grandmother",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "You start knowing a good player & their character. If the Demon kills them, you die too."
+        },
+        {
+            "name": "High Priestess",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, learn which player the Storyteller believes you should talk to most."
+        },
+        {
+            "name": "Huntsman",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Once per game, at night, choose a living player: the Damsel, if chosen, becomes a not-in-play Townsfolk. [+the Damsel]"
+        },
+        {
+            "name": "Innkeeper",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, choose 2 players: they cant die tonight, but 1 is drunk until dusk."
+        },
+        {
+            "name": "Investigator",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You start knowing that 1 of 2 players is a particular Minion."
+        },
+        {
+            "name": "Juggler",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "On your 1st day, publicly guess up to 5 players characters. That night, you learn how many you got correct."
+        },
+        {
+            "name": "King",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, if the dead equal or outnumber the living, you learn 1 alive character. The Demon knows you are the King."
+        },
+        {
+            "name": "Knight",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing 2 players that are not the Demon."
+        },
+        {
+            "name": "Librarian",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)"
+        },
+        {
+            "name": "Lycanthrope",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose an alive player. If good, they die & the Demon doesn’t kill tonight. One good player registers as evil."
+        },
+        {
+            "name": "Magician",
+            "difficulty": EXPERIMENTAL,
+            "effect": "The Demon thinks you are a Minion. Minions think you are a Demon."
+        },
+        {
+            "name": "Mathematician",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night, you learn how many players abilities worked abnormally (since dawn) due to another characters ability."
+        },
+        {
+            "name": "Mayor",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead."
+        },
+        {
+            "name": "Minstrel",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "When a Minion dies by execution, all other players (except Travellers) are drunk until dusk tomorrow.",
+            ribbonText: "REMINDER",
+            ribbonColor: MORNING_COLOR
+        },
+        {
+            "name": "Monk",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight."
+        },
+        {
+            "name": "Nightwatchman",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Once per game, at night, choose a player: they learn you are the Nightwatchman."
+        },
+        {
+            "name": "Noble",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing 3 players, 1 and only 1 of which is evil."
+        },
+        {
+            "name": "Oracle",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, you learn how many dead players are evil."
+        },
+        {
+            "name": "Pacifist",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Executed good players might not die."
+        },
+        {
+            "name": "Philosopher",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Once per game, at night, choose a good character: gain that ability. If this character is in play, they are drunk."
+        },
+        {
+            "name": "Pixie",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing 1 in-play Townsfolk. If you were mad that you were this character, you gain their ability when they die."
+        },
+        {
+            "name": "Poppy Grower",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Minions & Demons do not know each other. If you die, they learn who each other are that night."
+        },
+        {
+            "name": "Preacher",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, choose a player: a Minion, if chosen, learns this. All chosen Minions have no ability."
+        },
+        {
+            "name": "Professor",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Once per game, at night*, choose a dead player: if they are a Townsfolk, they are resurrected."
+        },
+        {
+            "name": "Ravenkeeper",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "If you die at night, you are woken to choose a player: you learn their character."
+        },
+        {
+            "name": "Sage",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "If the Demon kills you <i>(alternatively, if you die at night)</i>, you learn that it is 1 of 2 players.",
+            deathReminder: "Show the Sage 2 players, one of which is the Demon."
+        },
+        {
+            "name": "Sailor",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night, choose an alive player: either you or they are drunk until dusk. You cant die."
+        },
+        {
+            "name": "Savant",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each day, you may visit the Storyteller to learn 2 things in private: 1 is true & 1 is false."
+        },
+        {
+            "name": "Seamstress",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Once per game, at night, choose 2 players (not yourself): you learn if they are the same alignment."
+        },
+        {
+            "name": "Shugenja",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing if your closest evil player is clockwise or anti-clockwise. If equidistant, this info is arbitrary."
+        },
+        {
+            "name": "Slayer",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Once per game, during the day, publicly choose a player: if they are the Demon, they die."
+        },
+        {
+            "name": "Snake Charmer",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night, choose an alive player: if they are the Demon, you become that Demon role and turn evil, and then the Demon becomes a Townsfolk with no ability."
+        },
+        {
+            "name": "Soldier",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You are safe from the Demon."
+        },
+        {
+            "name": "Steward",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing 1 good player."
+        },
+        {
+            "name": "Tea Lady",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "If both your alive neighbors are good, they cant die."
+        },
+        {
+            "name": "Town Crier",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, you learn if a Minion nominated today."
+        },
+        {
+            "name": "Undertaker",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night*, you learn which character died by execution today."
+        },
+        {
+            "name": "Village Idiot",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, choose a player: you learn their alignment. [+0 to +2 Village Idiots. 1 of the extras is drunk]"
+        },
+        {
+            "name": "Virgin",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately."
+        },
+        {
+            "name": "Washerwoman",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You start knowing that 1 of 2 players is a particular Townsfolk."
+        },
+        {
+            "name": "Barber",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "If you died today or tonight, the Demon may choose 2 players (not another Demon) to swap characters.",
+            deathReminder: "The Demon may choose 2 players to swap characters.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Butler",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Damsel",
+            "difficulty": EXPERIMENTAL,
+            "effect": "All Minions know a Damsel is in play. If a Minion publicly guesses you (once), your team loses.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Drunk",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Golem",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You may only nominate once per game. When you do, if the nominee is not the Demon, they die.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Goon",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night, the 1st player to choose you with their ability is drunk until dusk. You become their alignment <i>(alternatively, you <b>know</b> their alignment).</i>.",
+            ribbonText: "OUTSIDER",
+            ribbonColor: MORNING_COLOR
+        },
+        {
+            "name": "Hatter",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If you died today or tonight, the Minion & Demon players may choose new Minion & Demon characters to be.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Heretic",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Whoever wins, loses & whoever loses, wins, even if you are dead.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Klutz",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "When you learn that you died, publicly choose 1 alive player: if they are evil, your team loses.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Lunatic",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "You think you are a Demon, but you are not. The Demon knows who you are & who you choose at night.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Moonchild",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Mutant",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "If you ever claim to be or insinuate you are an (or any) Outsider, you die.",
+            "notes": "If you are mad about being an Outsider, you might be executed.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Ogre",
+            "difficulty": EXPERIMENTAL,
+            "effect": "On your 1st night, choose a player (not yourself): you become their alignment (you dont know which) even if drunk or poisoned.”",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Plague Doctor",
+            "difficulty": EXPERIMENTAL,
+            "effect": "When you die, the Storyteller gains a Minion ability.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Politician",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If you were the player most responsible for your team losing, you change alignment & win, even if dead.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Puzzlemaster",
+            "difficulty": EXPERIMENTAL,
+            "effect": "1 player is drunk, even if you die. If you guess (once) who it is, learn the Demon player, but guess wrong & get false info.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Recluse",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "You might register as evil & as a Minion or Demon, even if dead.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Saint",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "If you die by execution, your team loses.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Snitch",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each Minion gets 3 bluffs.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Sweetheart",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "When you die, 1 player is drunk from now on.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Tinker",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "You might die at any time.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Zealot",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If there are 5 or more players alive, you must vote for every nomination.",
+            ribbonColor: NIGHTLY_COLOR,
+            ribbonText: "OUTSIDER"
+        },
+        {
+            "name": "Assassin",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Once per game, at night*, choose a player: they die, even if for some reason they could not.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Baron",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "There are extra Outsiders in play. [+2 Outsiders]",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "boffin",
+            "difficulty": EXPERIMENTAL,
+            "effect": "The Demon (even if drunk or poisoned) has a not-in-play good characters ability. You both know which.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Boomdandy",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If you are executed, all but 3 players die. After a 10 to 1 countdown, the player with the most players pointing at them, dies.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Cerenovus",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night, choose a player & a good character: they are <b>mad</b> they are this character tomorrow, or might be executed.",
+            notes: "Being Mad means the player must pretend to be that role. If they don't, they may be executed.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Devil's Advocate",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night, choose a living player (different to last night): if executed tomorrow, they dont die.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Evil Twin",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "You & an opposing player know each other. If the good player is executed, evil wins. Good cant win if you both live.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Fearmonger",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, choose a player: if you nominate & execute them, their team loses. All players know if you choose a new player.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Goblin",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If you publicly claim to be the Goblin when nominated & are executed that day, your team wins.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Godfather",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "You start knowing which Outsiders are in play. If 1 died today, choose a player tonight: they die. [-1 or +1 Outsider]",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Harpy",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, choose 2 players: tomorrow, the 1st player is mad that the 2nd is evil, or one or both might die.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Marionette",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You think you are a good character, but you are not. The Demon knows who you are. [You neighbor the Demon]",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Mastermind",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "If the Demon dies by execution (ending the game), play for 1 more day. If a player is then executed, their team loses.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Mezepheles",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing a secret word. The 1st good player to say this word becomes evil that night.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Organ Grinder",
+            "difficulty": EXPERIMENTAL,
+            "effect": "All players keep their eyes closed when voting and the vote tally is secret. Each night, choose if you are drunk until dusk.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Pit-Hag",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, choose a player & a character they become (if not in play). If a Demon is made, deaths tonight are arbitrary.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Poisoner",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night, choose a player: they are poisoned tonight and tomorrow day.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Psychopath",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each day, before nominations, you may publicly choose a player: they die. If executed, you only die if you lose roshambo.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Scarlet Woman",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "If there are 5 or more players alive & the Demon dies, you become the Demon. (Travellers dont count.)",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Spy",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night, you see the Grimoire. You might register as good & as a Townsfolk or Outsider, even if dead.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Summoner",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You get 3 bluffs. On the 3rd night, choose a player: they become an evil Demon of your choice. [No Demon]",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Vizier",
+            "difficulty": EXPERIMENTAL,
+            "effect": "All players know you are the Vizier. You cannot die during the day. If good voted, you may choose to execute immediately.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Widow",
+            "difficulty": EXPERIMENTAL,
+            "effect": "On your 1st night, look at the Grimoire & choose a player: they are poisoned. 1 good player knows a Widow is in play.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Witch",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night, choose a player: if they nominate tomorrow, they die. If just 3 players live, you lose this ability.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Wizard",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Once per game, choose to make a wish. If granted, it might have a price & leave a clue as to its nature.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Xaan",
+            "difficulty": EXPERIMENTAL,
+            "effect": "On night X, all Townsfolk are poisoned until dusk. [X Outsiders]",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL"
+        },
+        {
+            "name": "Al-Hadikhia",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, you may choose 3 players (all players learn who): each silently chooses to live or die, but if all live, all die.",
+            isDemon: true
+        },
+        {
+            "name": "Fang Gu",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, choose a player: they die. The 1st Outsider this kills becomes an evil Fang Gu & you die instead.<br/>There is 1 extra Outsider in play.",
+            isDemon: true
+        },
+        {
+            "name": "Imp",
+            "difficulty": TROUBLE_BREWING,
+            "effect": "Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.",
+            isDemon: true
+        },
+        {
+            "name": "Kazali",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose a player: they die. [You choose which players are which Minions. -? to +? Outsiders]",
+            isDemon: true
+        },
+        {
+            "name": "Legion",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, a player might die. Executions fail if only evil voted. You register as a Minion too. [Most players are Legion]",
+            isDemon: true
+        },
+        {
+            "name": "Leviathan",
+            "difficulty": EXPERIMENTAL,
+            "effect": "If more than 1 good player is executed, evil wins. All players know you are in play. After day 5, evil wins.",
+            isDemon: true
+        },
+        {
+            "name": "Lil' Monsta",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night, Minions choose who babysits Lil Monsta & is the Demon. Each night*, a player might die. [+1 Minion]",
+            isDemon: true
+        },
+        {
+            "name": "Lleech",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose a player: they die. You start by choosing a player: they are poisoned. You die if & only if they are dead. ",
+            isDemon: true
+        },
+        {
+            "name": "Lord of Typhon",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. There can be any number of outsiders]",
+            isDemon: true
+        },
+        {
+            "name": "No Dashii",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, choose a player: they die. Your 2 Townsfolk neighbors are poisoned.",
+            isDemon: true
+        },
+        {
+            "name": "Ojo",
+            "difficulty": EXPERIMENTAL,
+            "effect": "Each night*, choose a character: they die. If they are not in play, the Storyteller chooses who dies.",
+            isDemon: true
+        },
+        {
+            "name": "Po",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, you may choose a player: they die. If your last choice was no-one, choose 3 players tonight.",
+            isDemon: true
+        },
+        {
+            "name": "Pukka",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night, choose a player: they are poisoned. The previously poisoned player dies then becomes healthy.",
+            isDemon: true
+        },
+        {
+            "name": "Riot",
+            "difficulty": EXPERIMENTAL,
+            "effect": "On day 3, Minions become Riot & nominees die but nominate an alive player immediately. This must happen.",
+            isDemon: true
+        },
+        {
+            "name": "Shabaloth",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, choose 2 players: they die. A dead player you chose last night might be regurgitated.",
+            isDemon: true
+        },
+        {
+            "name": "Vigormortis",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, choose a player: they die. Minions you kill keep their ability & poison 1 Townsfolk neighbor.<br/>There is 1 less Outsider in play.",
+            isDemon: true
+        },
+        {
+            "name": "Vortox",
+            "difficulty": SECTS_AND_VIOLETS,
+            "effect": "Each night*, choose a player: they die. Townsfolk abilities yield false info. Each day, if no-one is executed, evil wins.",
+            isDemon: true,
+            ribbonText: 'REMINDER',
+            ribbonColor: MORNING_COLOR
+        },
+        {
+            "name": "Yaggababble",
+            "difficulty": EXPERIMENTAL,
+            "effect": "You start knowing a secret phrase. For each time you said it publicly today, a player might die."
+        },
+        {
+            "name": "Zombuul",
+            "difficulty": BAD_MOON_RISING,
+            "effect": "Each night*, if no-one died today, choose a player: they die. The 1st time you die, you live but register as dead.",
+            isDemon: true
+        }
+    ]
+    for (let i = 0; i < roles.length; i++) {
+        roles[i].i = i
+    }
+    return roles
+}
+
+export const getRoles_OLD = () => {
+    const roles = []
+    return sortRolesNormal(roles)
+}
+
+export function getLocations() {
+    return []
+}
+
+export function getLocationCards() {
+    const cards = []
+    return cards
+}
+
+export function getRolesByDifficulty(difficulty) {
+    return getRoles().filter(role => role.difficulty <= difficulty)
+}
+export function getRolesForDifficulty(difficulty) {
+    return getRoles().filter(role => role.difficulty == difficulty)
+}
+export function getTestRoles() {
+    return getRoles().filter(role => randomOf(true, false)).map(role => ({
+        ...role,
+        isInGame: randomOf(true, false)
+    }))
+}
+export function getSectionFilters() {
+    const allRoles = getRoles()
+    const difficulties = getAllRoleDifficulties()
+    const filterFunctions = []
+    for (const difficulty of difficulties) {
+        const filter = i => allRoles[i].difficulty == difficulty
+        filterFunctions.push(filter)
+    }
+    return filterFunctions
+}
+export function getAllRoleDifficulties() {
+    const roles = getRoles()
+    const foundDifficulties = []
+    for (const role of roles) {
+        if (foundDifficulties.includes(role.difficulty) == false) {
+            foundDifficulties.push(role.difficulty)
+        }
+    }
+    return foundDifficulties.sort()
+}
+
+export function printRolesByDifficulty() {
+    const roles = getRoles()
+    console.log({roles})
+    console.log({rolesBAD_MOON_RISING: roles.filter(role => role.difficulty == BAD_MOON_RISING)})
+    console.log({rolesINTERMEDIATE: roles.filter(role => role.difficulty == INTERMEDIATE)})
+    console.log({rolesADVANCED: roles.filter(role => role.difficulty == ADVANCED)})
+    console.log({rolesCOMPLETE: roles.filter(role => role.difficulty == COMPLETE)})
+}
+// printRolesByDifficulty()
+
+export function sortRolesNormal(roles) {
+    const getRoleSortValue = role => 
+        role.isDemon?
+            99
+        :role.ribbonText == 'EVIL'?
+            98
+        :role.ribbonText == 'OUTSIDER'?
+            10
+        :role.effect.toLowerCase().includes('you start')?
+            1
+        :role.effect.toLowerCase().includes('each night,')?
+            2
+        :role.effect.toLowerCase().includes('night*')?
+            3
+        :
+            4
+
+    const rolesSorted = [...roles]
+    rolesSorted.sort((a, b) => getRoleSortValue(a) - getRoleSortValue(b))
+    return rolesSorted
+}
+
+// export function sortRolesNormal(roles) {
+//     const rolePriorityByTypeOrName = [
+//         WEREWOLVES,
+//         REGULAR_NEGATIVE,
+//         EVIL_SETUP,
+//         SPECIAL_SETUP,
+//         SETUP,
+//         'Bell Ringer',
+//         'Archaeologist',
+//         NIGHTLY,
+//         SPECIAL_NIGHTLY,
+//         REGULAR,
+//         OTHER_CATEGORY
+//     ]
+//     const rolesByCategory = groupArrayBy(roles, role => role.category)
+//     function sortArrayByWorthDescending(arr) {
+//         const getWorth = elem => elem.worth != null? elem.worth: 1
+//         return arr.sort((a,b) => getWorth(a) - getWorth(b))
+//     }
+    
+//     const rolesAlphabetically = [...roles].sort((a, b) => a.name.localeCompare(b.name))
+//     const rolesAndByWorth = sortArrayByWorthDescending([...rolesAlphabetically])
+//     const getRolePriority = role => 
+//     rolePriorityByTypeOrName.indexOf(role.name) != -1?
+//         rolePriorityByTypeOrName.indexOf(role.name):
+//     rolePriorityByTypeOrName.indexOf(role.team) != -1?
+//         rolePriorityByTypeOrName.indexOf(role.team):
+//     rolePriorityByTypeOrName.indexOf(role.category) != -1?
+//         rolePriorityByTypeOrName.indexOf(role.category):
+//         9999
+//     if (browser) {
+//         window.getRolePriority = getRolePriority
+//     }
+//     const rolesAndByCategory = [...rolesAndByWorth].sort((a, b) => getRolePriority(a) - getRolePriority(b))
+
+//     return rolesAndByCategory
+// }
+
+export const NO_PRIORITY = 99
+const setupOrder = [
+
+    // High priority pregame effects
+    'Philosopher',
+    'Snake Charmer',
+    'Evil Twin',
+
+    // Pre-game effects
+    'Sailor',
+    'Courtier',
+    
+    // Setup evil knowledge
+    'Godfather',
+
+    // Choose a player (parallel)..
+    'Devil\'s Advocate',
+    'Poisoner',
+    'Witch',
+    'Cerenovus',
+    'Spy',
+    
+    // Lunatic
+    'Lunatic',
+    
+    // Killing
+    'Pukka',
+    
+    // Start info
+    'Grandmother',
+    'Washerwoman',
+    'Librarian',
+    'Investigator',
+    'Clockmaker',
+    'Chef',
+
+    // Nightly info
+    'Flowergirl',
+    'Town Crier',
+    'Dreamer',
+    'Seamstress',
+    'Empath',
+    'Fortune Teller',
+    
+    // Other
+    'Butler',
+
+    // End of night
+    'Mathematician',
+    'Chambermaid'
+]
+export function getSetupRolePriority(roleOrRoleName) {
+    if (roleOrRoleName == null) {
+        return NO_PRIORITY
+    }
+    let roleName = roleOrRoleName.name != null? roleOrRoleName.name : roleOrRoleName
+    if (roleName == 'Rival A' || roleName == 'Rival B') {
+        roleName = 'Rival'
+    }
+    const index = setupOrder.indexOf(roleName)
+    if (index == -1) {
+        return NO_PRIORITY
+    }
+    return index
+}
+const normalOrder = [
+    'Imp',
+    'Scarlet Woman',
+    'Baron',
+    'Poisoner',
+    'Spy'
+]
+export function getNormalRolePriority(roleOrRoleName) {
+    if (roleOrRoleName == null) {
+        return NO_PRIORITY
+    }
+    let roleName = roleOrRoleName.name != null? roleOrRoleName.name : roleOrRoleName
+    const index = normalOrder.indexOf(roleName)
+    if (index == -1) {
+        return NO_PRIORITY
+    }
+    return index
+}
+
+const nightlyOrder = [
+    // High priority pregame effects
+    'Philosopher',
+    'Snake Charmer',
+
+    // Drunk makers
+    'Minstrel',
+    'Sailor',
+    'Innkeeper',
+    'Courtier',
+    
+    // Poisoner-like effects (parallel)
+    'Poisoner',
+    'Witch',
+    'Cerenovus',
+    
+    // Pre-evils Monk-like effects
+    'Gambler',
+    'Monk',
+    'Exorcist',
+
+    // Non-invasive evils
+    "Devil's Advocate",
+    'Spy',
+
+    // Scarlet Woman
+    'Scarlet Woman',
+
+    // Evil Killings
+    'Pit-Hag',
+    'Fang Gu',
+    'Vigormortis',
+    'Vortox',
+    'No Dashii',
+    'Zombuul',
+    'Pukka',
+    'Shabaloth',
+    'Imp',
+    
+    'Assassin',
+    'Godfather',
+    
+    // Death effects
+    'Barber',
+    "Sage",
+    'Ravenkeeper',
+    'Undertaker',
+
+    // Nightly knowledge
+    'Flowergirl',
+    'Town Crier',
+    'Dreamer',
+    'Seamstress',
+    'Empath',
+    'Fortune Teller',
+    'Professor',
+    
+    // Pre-end of night effects
+    'Oracle',
+    'Gossip',
+    'Tinker',
+    'Moonchild',
+    'Grandmother',
+    
+    // End of Night
+    'Goon',
+    'Butler',
+
+    'Mathematician',
+    'Chambermaid',
+
+    // Start of day
+    'Juggler',
+
+]
+export function getNightlyRolePriority(roleOrRoleName) {
+    if (roleOrRoleName == null) {
+        return NO_PRIORITY
+    }
+    let roleName = roleOrRoleName.name != null? roleOrRoleName.name : roleOrRoleName
+    if (roleName == 'Mora') {
+        roleName = 'Strigoy'
+    }
+    if (roleName == 'Hazer' || roleName == 'Silencer') {
+        roleName = 'Secondary Strigoy'
+    }
+    const index = nightlyOrder.indexOf(roleName)
+    if (index == -1) {
+        return NO_PRIORITY
+    }
+    return index
+}
+
+export function getSortRolesWithPriorityFunction(roles, getRolePriority) {
+    console.log('SORTING')
+
+    const rolesSortedByPrio = roles.sort((a, b) => getRolePriority(a) - getRolePriority(b))
+    const rolesWithPrio = rolesSortedByPrio.filter(role => getRolePriority(role) != NO_PRIORITY)
+    const rolesWithoutPrio = rolesSortedByPrio.filter(role => getRolePriority(role) == NO_PRIORITY)
+    const rolesWithoutPrioSorted = rolesWithoutPrio.sort((a, b) => a.name.localeCompare(b.name))
+
+    return [...rolesWithPrio, ...rolesWithoutPrioSorted]
+}
+
+
+
+export function getRole(name) {
+    return getRoles().find(role => role.name == name)
+}
+export function getRoleByI(i) {
+    return getRoles().find(role => role.i == i)
+}
+export function getEvent(name) {
+    return getLocationCards().find(card => card.name == name)
+}
+
+
+export function setupRoles(nPlayers, difficulty) {
+    const baseGoodRoles = getRoles().filter(role => role.difficulty <= difficulty && role.team != WEREWOLVES)
+    while (baseGoodRoles.length < nPlayers) {   // Pad with Peasants
+        baseGoodRoles.push(getRole('Peasant'))
+    }
+    times(10, () => {
+        baseGoodRoles.push(getRole('Peasant'))       // Add 3 extra Peasants
+    })
+
+    const goodRoles = randomizeArray(baseGoodRoles) 
+    const evilRoles = randomizeArray(getRoles().filter(role => role.difficulty <= difficulty && role.team == WEREWOLVES && role.isWerewolf != true))
+
+    const rolesSoFar = []
+
+    // First, correctly add enough werewolves and evil roles, judging by the evilsByPlayers table
+    const evilsThisGame = randomOf(...evilsByPlayers[nPlayers])
+    const nWerewolvesThisGame = evilsThisGame.filter(roleName => roleName == STRIGOY).length
+    const nNonWerewolfEvilsThisGame = evilsThisGame.length - nWerewolvesThisGame
+    while (evilRoles.length < nNonWerewolfEvilsThisGame) {
+        evilRoles.push(getRole('Cultist'))
+    }
+    
+    times(nWerewolvesThisGame, () => {
+        rolesSoFar.push(getRole('Strigoy'))
+    })
+    times(nNonWerewolfEvilsThisGame, () => {
+        rolesSoFar.push(evilRoles.pop())
+    })
+    
+    // Fix yaga
+    const getWorthBalanceSoFar = () => sum(rolesSoFar.map(role => role.worth))
+    const yaga = rolesSoFar.find(role => role.name.includes('Yaga'))
+    const isYagaInGame = yaga != null
+    if (isYagaInGame) {
+        popArrayElementFind(baseGoodRoles, role => role.name == yaga.yagaRole)
+    }
+
+
+    // Second, add townsfolk
+    while (rolesSoFar.length < nPlayers) {
+        rolesSoFar.push(goodRoles.pop())
+    }
+
+    // Third, balance it
+    let nIterations = 0
+    function popTownsfolkMatchingCondition(conditionRoleToBool) {
+        const townsfolksMatching = rolesSoFar.filter(role => role.team != WEREWOLVES && conditionRoleToBool(role))
+        if (townsfolksMatching.length == 0)
+            return null
+        const chosenTownsfolk = randomOf(...townsfolksMatching)
+        return popArrayElementFind(rolesSoFar, role => role.name == chosenTownsfolk.name)
+    }
+    function moveGoodTownsfolkMatchingConditionToRolesSoFar(conditionRoleToBool) {
+        const unusedTownsfolks = goodRoles.filter(conditionRoleToBool)
+        if (unusedTownsfolks.length == 0)
+            return null
+        const chosenNewTownsfolk = randomOf(...unusedTownsfolks)
+        const roleFound = popArrayElementFind(goodRoles, role => role.name == chosenNewTownsfolk.name)
+        rolesSoFar.push(chosenNewTownsfolk)
+        return roleFound
+    }
+    function replaceWeakTownsfolkWithStronger() {
+        let removedTownsfolk = popTownsfolkMatchingCondition(role => role.name == 'Peasant')
+        if (removedTownsfolk == null) {
+            removedTownsfolk = popTownsfolkMatchingCondition(role => role.worth <= 1)
+        }
+        if (removedTownsfolk == null)
+            removedTownsfolk = popTownsfolkMatchingCondition(role => true)  // Pop any townsfolk
+        const pushedTownsfolk = moveGoodTownsfolkMatchingConditionToRolesSoFar(role => role.worth >= removedTownsfolk.worth)
+        if (pushedTownsfolk == null) {
+            rolesSoFar.push(removedTownsfolk)   // Put it back
+        } else {
+        }
+    }
+    function replaceStrongTownsfolkWithWeaker() {
+        let removedTownsfolk = popTownsfolkMatchingCondition(role => role.worth >= 1)
+        if (removedTownsfolk == null)
+            removedTownsfolk = popTownsfolkMatchingCondition(role => true)  // Pop any townsfolk
+        const pushedTownsfolk = moveGoodTownsfolkMatchingConditionToRolesSoFar(role => role.worth <= removedTownsfolk.worth)
+        if (pushedTownsfolk == null) {
+            rolesSoFar.push(removedTownsfolk)   // Put it back
+        } else {
+
+        }
+    }
+    
+    const maxIterations = 20
+    while (!isWorthBalanceAcceptable(getWorthBalanceSoFar()) && nIterations < maxIterations) {
+        const areTownsfolkTooWeak = getWorthBalanceSoFar() < 0
+        if (areTownsfolkTooWeak) {
+            replaceWeakTownsfolkWithStronger()
+        } else {
+            replaceStrongTownsfolkWithWeaker()
+        }
+        randomizeArray(rolesSoFar)
+        nIterations++
+    }
+    
+    console.log(`For ${nPlayers} people, difficulty ${difficulty}, worth balance is: ${getWorthBalanceSoFar()} (did ${nIterations} iterations)`)
+    console.log(rolesSoFar)
+
+    // Fourth, rectifications
+    const minimumAcceptableImportantRoles = Math.floor(nPlayers / 7)
+    const importantRolesSoFar = rolesSoFar.filter(role => role.isImportant)
+    if (importantRolesSoFar.length < minimumAcceptableImportantRoles) {
+        return setupRoles(nPlayers, difficulty)
+    }
+
+    return rolesSoFar
+}
+

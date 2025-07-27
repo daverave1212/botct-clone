@@ -1,0 +1,135 @@
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Acrobat_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Alchemist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Alsaahir_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Amnesiac_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Artist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Atheist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Balloonist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Banshee_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Bounty Hunter_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Cannibal_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Chambermaid_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Chef_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Choirboy_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Clockmaker_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Courtier_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Cult Leader_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Dreamer_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Empath_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Engineer_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Exorcist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Farmer_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Fisherman_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Flowergirl_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Fool_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Fortune Teller_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Gambler_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/General_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Gossip_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Grandmother_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/High Priestess_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Huntsman_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Innkeeper_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Investigator_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Juggler_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/King_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Knight_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Librarian_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Lycanthrope_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Magician_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Mathematician_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Mayor_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Minstrel_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Monk_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Nightwatchman_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Noble_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Oracle_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Pacifist_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Philosopher_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Pixie_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Poppy Grower_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Preacher_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Professor_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Ravenkeeper_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Sage_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Sailor_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Savant_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Seamstress_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Shugenja_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Slayer_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Snake Charmer_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Soldier_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Steward_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/townsfolk/Tea Lady_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/townsfolk/Town Crier_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Undertaker_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/townsfolk/Village Idiot_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Virgin_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/townsfolk/Washerwoman_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/outsider/Barber_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/outsider/Butler_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Damsel_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/outsider/Drunk_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Golem_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/outsider/Goon_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Hatter_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Heretic_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/outsider/Klutz_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/outsider/Lunatic_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/outsider/Moonchild_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/outsider/Mutant_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Ogre_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Plague Doctor_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Politician_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Puzzlemaster_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/outsider/Recluse_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/outsider/Saint_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Snitch_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/outsider/Sweetheart_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/outsider/Tinker_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/outsider/Zealot_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/minion/Assassin_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/minion/Baron_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/boffin.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Boomdandy_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/minion/Cerenovus_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/minion/Devil's Advocate_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/minion/Evil Twin_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Fearmonger_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Goblin_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/minion/Godfather_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Harpy_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Marionette_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/minion/Mastermind_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Mezepheles_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Organ Grinder_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/minion/Pit-Hag_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/minion/Poisoner_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Psychopath_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/minion/Scarlet Woman_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/minion/Spy_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Summoner_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Vizier_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/Widow_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/minion/Witch_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/wizard.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/minion/xaan.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Al-Hadikhia_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/demon/Fang Gu_icon.webp
+https://script.bloodontheclocktower.com/images/icon/1 - Trouble Brewing/demon/Imp_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Kazali_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Legion_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Leviathan_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Lil' Monsta_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Lleech_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/lordoftyphon_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/demon/No Dashii_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Ojo_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/demon/Po_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/demon/Pukka_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Riot_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/demon/Shabaloth_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/demon/Vigormortis_icon.webp
+https://script.bloodontheclocktower.com/images/icon/3 - Sects and Violets/demon/Vortox_icon.webp
+https://script.bloodontheclocktower.com/images/icon/4 - Experimental/demon/Yaggababble_icon.webp
+https://script.bloodontheclocktower.com/images/icon/2 - Bad Moon Rising/demon/Zombuul_icon.webp
