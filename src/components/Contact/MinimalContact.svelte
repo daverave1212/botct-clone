@@ -25,7 +25,7 @@
 
 
 <div class="contact shadowed rounded">
-    <div class="header">
+    <div class="header {isDead? 'dead': ''}">
         <div class="picture-wrapper" on:click={toggleContent}>
             <!-- svelte-ignore a11y-missing-attribute -->
             <img
@@ -33,7 +33,7 @@
                 class="center"
             />
         </div>
-        <div class="right-wrapper">
+        <div class="right-wrapper upper-half">
             <span class="subtitle" on:click={toggleContent}>{name}</span>
         </div>
     </div>

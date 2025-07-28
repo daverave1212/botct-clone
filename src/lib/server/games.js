@@ -1,6 +1,6 @@
 
 
-const games = {}
+export const games = {}
 
 function createRandomCode(length=3) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -30,6 +30,10 @@ class Game {
         this.privateKey = createRandomCode(6)
 
         this.playersInRoom = []
+    }
+
+    getPlayerAt(i) {
+        return this.playersInRoom[i]
     }
 
     addPlayer(player) {
@@ -71,11 +75,23 @@ export function addPlayerToGameST(player, roomCode) {
         return 409
     }
 
-    game.addPlayer(player)
+    game.addPlayer({
+        ...player,
+        isDead: false
+    })
     return 200
 }
 
 export function getGame(roomCode) {
     const game = games[roomCode]
     return game
+}
+
+export function gameAndPlayerIExist(params) {
+    const game = getGame(params.roomCode)
+    const playerI = params.i
+    if (game == null || playerI == null || playerI < 0 || playerI >= game.playersInRoom.length) {
+        return false
+    }
+    return true
 }

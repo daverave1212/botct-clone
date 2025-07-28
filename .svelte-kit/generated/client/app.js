@@ -16,7 +16,8 @@ export const nodes = [
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
 	() => import('./nodes/14'),
-	() => import('./nodes/15')
+	() => import('./nodes/15'),
+	() => import('./nodes/16')
 ];
 
 export const server_loads = [];
@@ -27,15 +28,16 @@ export const dictionary = {
 		"/all-roles": [4],
 		"/card": [5],
 		"/custom-script": [6],
-		"/how-to-play": [7],
-		"/online/online-game": [8],
-		"/online/play-online": [9],
-		"/online/test": [10],
-		"/players": [11],
-		"/reset": [12],
-		"/role-select": [13],
-		"/script-maker": [14],
-		"/script-select": [15]
+		"/error": [7],
+		"/how-to-play": [8],
+		"/online/online-game": [9],
+		"/online/play-online": [10],
+		"/online/test": [11],
+		"/players": [12],
+		"/reset": [13],
+		"/role-select": [14],
+		"/script-maker": [15],
+		"/script-select": [16]
 	};
 
 export const hooks = {

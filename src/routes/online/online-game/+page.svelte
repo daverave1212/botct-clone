@@ -26,7 +26,7 @@
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
     import InspectRoleDrawer from '../../../components/InspectRoleDrawer.svelte';
     import { getBOTCTRole } from "../../../lib/BOTCTDatabase";
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { fetchGame, getPlayersInRoom } from '../../../lib/online-utils.js';
     import SimpleContact from '../../../components/Contact/SimpleContact.svelte';
     import MinimalContact from '../../../components/Contact/MinimalContact.svelte';
@@ -43,13 +43,20 @@
             throw `Null players in room with code: ${gameRoomCode}.`
         }
 
+        console.log(pir)
         $playersInRoom = pir
+        
     }
 
+    let refreshIntervalId
     onMount(() => {
-        setInterval(async () => {
+        refresh()
+        refreshIntervalId = setInterval(async () => {
             await refresh()
         }, 3000)
+    })
+    onDestroy(() => {
+        clearInterval(refreshIntervalId)
     })
     
     $:availableRoles = $chosenScriptRoleNames == null? []: $chosenScriptRoleNames
@@ -189,9 +196,18 @@
         modalOnConfirm = callback
     }
 
-    function kickPlayer(playerI) {
+    async function kickPlayer(playerI) {
         const rc = $roomCode
-        fetchGame('DELETE', `/api/game/${rc}/remove-player/${playerI}`)
+        await fetchGame('DELETE', `/api/game/${rc}/player/${playerI}`)
+        await refresh()
+    }
+
+    async function killPlayer(playerI) {
+        console.log('Killing player')
+        const rc = $roomCode
+        // await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
+        await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
+        await refresh()
     }
 
 </script>
@@ -232,7 +248,7 @@
     roles={availableRoles.map(name => getRole(name))}
     
     sectionFilters={[_ => true]}
-    sectionTitles={['Roles']}
+    sectionTitles={['Choose an avatar']}
     sectionTexts={['']}
 
     onClickOnRole={clickedRoleI => changeRole(currentlySelectedRoleI, clickedRoleI)}
@@ -266,7 +282,11 @@
                 isDead={$playersInRoom[i].isDead}
             >
                 <div class="flex-content wrap margin-top-1">
-                    <button class="btn red" on:click={() => onRemovePlayer(i)}>Kick</button>
+                    <button class="btn red" on:click={() => killPlayer(i)}>
+                        <img class="icon" src="/images/status/Dead.png"/> Kill
+                        <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
+                    </button>
+                    <button class="btn gray" on:click={() => kickPlayer(i)}>Kick</button>
                 </div>
             </MinimalContact>
 
