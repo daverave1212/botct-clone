@@ -1,4 +1,4 @@
-import { addPlayerToGameST, createNewGame } from "../../../lib/server/games"
+import { addPlayerToGameST, createNewGame, games } from "../../../lib/server/games"
 import { getRequestUser, response } from "../../../lib/server/utils"
 
 
@@ -15,4 +15,8 @@ export async function POST({ request, url, params }) {
         roomCode: game.roomCode,
         privateKey: game.privateKey
     })
+}
+
+export async function GET({ request, url, params }) {
+    return response(games.map(game => game.toJsonObject()))
 }

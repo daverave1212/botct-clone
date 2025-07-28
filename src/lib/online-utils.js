@@ -1,10 +1,16 @@
 import { get } from "svelte/store";
 import { me } from "../stores/online/local/me";
 import { playersInRoom } from "../stores/online/local/room";
+import { goto } from '$app/navigation';
+import { browser } from '$app/environment'
 
 // On each request, always send the user data as a header
 export async function fetchGame(method, url) {
-    const response = await fetch(url, {
+    if (!browser) {
+        throw `Not in browser`
+    }
+    const fullUrl = window.location.origin + url
+    const response = await fetch(fullUrl, {
         method: method,
         headers: {
             "Content-Type": "application/json",
@@ -13,19 +19,20 @@ export async function fetchGame(method, url) {
             "privateKey": get(me).privateKey,
         }
     })
-    return {...(await response.json()), status: response.status}
-}
+    
+    const responseObject = await response.json()
 
-export async function getGame(roomCode) {
-    if (roomCode == null) throw `Null roomCode given to refreshRoom`
-    const response = await fetchGame('GET', `/api/game/${roomCode}`)
-    return response
+    if (response.status != 200) {
+        goto(`/error?statusCode=${response.status}&message=Unabble to ${method} resource ${url}`)
+        return { status: response.status }
+    }
+
+    return {...responseObject, status: response.status}
 }
 
 export async function getPlayersInRoom(roomCode) {
     if (roomCode == null)
         throw `Null roomCode given to refreshRoom`
     const response = await fetchGame('GET', `/api/game/${roomCode}`)
-    console.log({response})
     return response.playersInRoom
 }

@@ -40,13 +40,17 @@
 
 
     async function onJoin() {
-
+        const inputRoomCode = prompt('Enter room code.')
+        $roomCode = inputRoomCode
+        const response = await fetchGame('POST', `/api/game/${inputRoomCode}/player`)
+        goto('/online/online-game')
     }
 
     async function onCreate() {
         // privateKey is the same for the owner and the game
         const response = await fetchGame('POST', '/api/game')
         $me = {...$me, privateKey: response.privateKey }
+        console.log({response})
         $roomCode = response.roomCode
         goto('/online/online-game')
     }
@@ -82,8 +86,8 @@
         </div>
         <input class="margin-top-2" placeholder="Name" on:click={onNameClick} value={$me.name} readonly/>
         <div class="flex-content center margin-top-2">
-            <a in:fly={{y: 100, delay: 100 }} class="btn big colorful" href="/online/join">Join</a>
-            <button class="btn big colorful" on:click={onCreate}>Create</button>
+            <button class="btn big colorful" on:click={onJoin} in:fly={{y: 100, delay: 100 }}>Join</button>
+            <button class="btn big colorful" on:click={onCreate} in:fly={{y: 100, delay: 150 }}>Create</button>
         </div>
 
 

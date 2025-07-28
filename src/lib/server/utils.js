@@ -10,7 +10,7 @@ export function getRequestUser(request) {
 
     const name = headers.get('name')
     const src = headers.get('src')
-    const privateKey = headers.get('private-key')
+    const privateKey = headers.get('privateKey')
 
     return { name, src, privateKey }
 }
@@ -18,6 +18,7 @@ export function getRequestUser(request) {
 export function isAuthorizedForGame(request, roomCode) {
     const user = getRequestUser(request)
     const game = getGame(roomCode)
+    console.log(`Is user ${user.name} ${user.privateKey} authorized for game ${roomCode} ${game.privateKey}`)
     if (user == null || game == null) {
         return false
     }

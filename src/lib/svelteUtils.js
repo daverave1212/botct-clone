@@ -69,7 +69,7 @@ export function getScriptFromURLSvelte(url) {
 
 export function getURLParams() {
     if (!browser) {
-        throw `Not in browser`
+        return {}
     }
     return new URLSearchParams(window.location.search)
 }
