@@ -39,6 +39,7 @@
     isBurgerOpen={isBurgerOpen} setIsBurgerOpen={bool => isBurgerOpen = bool}
 >
     <MobileBurgerButton src="/images/burger.svg" onClick={() => isBurgerOpen = true}></MobileBurgerButton>
+    <a class="btn blue" style="margin-left: 20vw; margin-top: 10vh; position: absolute;" href="/online/play-online">Play Online</a>
 </Nav>
 
 {#key data.url}

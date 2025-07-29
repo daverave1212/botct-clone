@@ -18,7 +18,6 @@ export function getRequestUser(request) {
 export function isAuthorizedForGame(request, roomCode) {
     const user = getRequestUser(request)
     const game = getGame(roomCode)
-    console.log(`Is user ${user.name} ${user.privateKey} authorized for game ${roomCode} ${game.privateKey}`)
     if (user == null || game == null) {
         return false
     }
@@ -54,4 +53,12 @@ export function randomInt(low, high){
 }
 export function randomOf(...args){
     return args[randomInt(0, args.length - 1)];
+}
+
+export function test(msg, condition) {
+    if (condition) {
+        console.log(`✅ ${msg}`)
+    } else {
+        console.log(`❌ ${msg}`)
+    }
 }

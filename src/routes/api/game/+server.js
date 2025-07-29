@@ -9,8 +9,6 @@ export async function POST({ request, url, params }) {
     const game = createNewGame(player)
     addPlayerToGameST(player, game.roomCode)
 
-    console.log({request})
-
     return response({
         roomCode: game.roomCode,
         privateKey: game.privateKey

@@ -1,8 +1,10 @@
 import { GamePhases } from "$lib/shared-lib/GamePhases"
+import { roomCode } from "../../stores/online/local/room"
 import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
 import { createRandomCode, randomizeArray } from "./utils"
 
 
+const IS_DEBUG = true
 
 
 function generateRandomRoomCode() {
@@ -29,7 +31,10 @@ const PLAYER_DEFAULT = {
     role: null,
     info: null,             // if info != null, on client side, it shows exactly the info as rendered HTML
 
-    changedAlignment: null  // 'evil' 'good'
+    changedAlignment: null, // 'evil' 'good'
+    isDrunk: false,
+    statusEffects: []
+
 }
 export const games = {}
 class Game {
@@ -58,10 +63,10 @@ class Game {
 
     nextDay() {
         this.phase = GamePhases.NIGHT
-        this.countdownRemaining = 8 * 1000
+        this.countdownRemaining = 4 * 1000
 
         this.countdownStart = Date.now()
-        this.countdownDuration = 8 * 1000
+        this.countdownDuration = 4 * 1000
 
         let startCountdownIntervalId
         startCountdownIntervalId = setInterval(() => {
@@ -80,10 +85,10 @@ class Game {
 
     start() {
         this.phase = GamePhases.COUNTDOWN
-        this.countdownRemaining = 8 * 1000
+        this.countdownRemaining = 4 * 1000
 
         this.countdownStart = Date.now()
-        this.countdownDuration = 8 * 1000
+        this.countdownDuration = 4 * 1000
 
         this.assignRoles()
 
@@ -106,9 +111,17 @@ class Game {
     }
 
     assignRoles() {
-        this.playersInRoom[0].role = getRole('Dreamer')
-        this.playersInRoom[1].role = getRole('Investigator')
-        this.playersInRoom[2].role = getRole('Spy')
+        if (IS_DEBUG) {
+            const randomizedPlayers = randomizeArray([...this.playersInRoom])
+            randomizedPlayers[0].role = getRole('Spy')
+            randomizedPlayers[1].role = getRole('Investigator')
+            randomizedPlayers[2].role = getRole('Spy')
+            randomizedPlayers[3].role = getRole('Mutant')
+            randomizedPlayers[4].role = getRole('Imp')
+            // randomizedPlayers[5].role = getRole('Librarian')
+
+            this.getPlayer('Dave').role = getRole('Clockmaker')
+        }
     }
 
     doRolesSetup() {
@@ -173,6 +186,43 @@ class Game {
     getTownsfolk() {
         return randomizeArray(this.playersInRoom.filter(p => !p.role.isEvil))
     }
+    getOutsiders() {
+        return randomizeArray(this.playersInRoom.filter(p => p.role.isOutsider || p.isDrunk))
+    }
+    getDemon() {
+        return this.playersInRoom.find(p => p.isDemon)
+    }
+    getNextPlayer(player) {
+        const i = this.playersInRoom.findIndex(p => p.name == player.name)
+        let nextI = i + 1
+        if (nextI >= this.playersInRoom.length) {
+            nextI = 0
+        }
+        return nextI
+    }
+    getPreviousPlayer(player) {
+        const i = this.playersInRoom.findIndex(p => p.name == player.name)
+        let prevI = i + 1
+        if (prevI < 0) {
+            prevI = this.playersInRoom.length - 1
+        }
+        return prevI
+    }
+
+
+    // Testing only
+    setRoles(arr) {
+        for (let i = 0; i < arr.length; i++) {
+            this.playersInRoom[i].role = getRole(arr[i])
+        }
+    }
+    setPlayersAndRoles(arr) {
+        for (let i = 0; i < arr.length; i++) {
+            addPlayerToGameST({ src: '/images/role-thumbnails/Alchemist.webp', name: 'Player' + i }, this.roomCode)
+            this.playersInRoom[i].role = getRole(arr[i])
+        }
+        
+    }
 
 }
 
@@ -181,6 +231,14 @@ class Game {
 export function createNewGame(player) {
     const game = new Game(player.name)
     games[game.roomCode] = game
+    return game
+}
+
+export function makeTestGame() {
+    const player = { name: 'Dave', src: 'none.png' }
+    const game = new Game(player.name)
+    games[game.roomCode] = game
+
     return game
 }
 

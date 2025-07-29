@@ -41,4 +41,9 @@
         console.log({GamePhases})
     }}>Check Shared Lib</button>
 
+
+    <button class="btn red" on:click={async () => {
+        fetchGame('GET', '/api/test')
+    }}>Run tests</button>
+
 </div>

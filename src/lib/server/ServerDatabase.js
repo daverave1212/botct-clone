@@ -1,5 +1,6 @@
-import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, times } from "./utils"
+import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, test, times } from "./utils"
 import { browser } from '$app/environment'
+import { addPlayerToGameST, makeTestGame } from "./games"
 
 export const WEREWOLVES = 'werewolves'
 export const TOWNSFOLK = 'townsfolk'
@@ -173,7 +174,75 @@ export const getRoles = () => {
         {
             "name": "Clockmaker",
             "difficulty": SECTS_AND_VIOLETS,
-            "effect": "You start knowing how many steps from the Demon to its nearest Minion."
+            "effect": "You start knowing how many steps from the Demon to its nearest Minion.",
+            onSetup: function(game, player) {
+                const demonIndex = game.playersInRoom.findIndex(p => p.role?.isDemon)
+
+                if (demonIndex == -1) {
+                    player.info = { text: 'There is no demon in this game.' }
+                    return
+                }
+
+                if (game.getMinions().length == 0) {
+                    player.info = { text: 'There are no minions in this game.' }
+                    return
+                }
+
+                let answer = 0
+                for (let step = 1; step < game.playersInRoom.length; step++) {
+                    const prevI = (demonIndex - step + game.playersInRoom.length) % game.playersInRoom.length
+                    const nextI = (demonIndex + step + game.playersInRoom.length) % game.playersInRoom.length
+                    const prevPlayer = game.playersInRoom[prevI]
+                    const nextPlayer = game.playersInRoom[nextI]
+                    if (prevPlayer.role?.isEvil && !prevPlayer.role?.isDemon) {
+                        answer = step
+                        break
+                    }
+                    if (nextPlayer.role?.isEvil && !nextPlayer.role?.isDemon) {
+                        answer = step
+                        break
+                    }
+                }
+                player.info = {
+                    text: `<h1>${answer}</h1>`
+                }
+            },
+            test() {
+                const game = makeTestGame()
+                game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp'])
+                const player = game.getPlayerAt(1)
+                
+                this.onSetup(game, player)
+                test(`Spy first, imp last`, player.info?.text == `<h1>1</h1>`)
+
+                game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp', 'Spy'])
+                this.onSetup(game, player)
+                test(`Spy first, imp > spy`, player.info?.text == `<h1>1</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Spy', 'Fool', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp between`, player.info?.text == `<h1>2</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp low`, player.info?.text == `<h1>3</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp equal`, player.info?.text == `<h1>3</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Spy', 'Fool', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`No imp`, player.info?.text == `There is no demon in this game.`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
+                this.onSetup(game, player)
+                test(`No minions`, player.info?.text == `There are no minions in this game.`)
+                
+                game.setPlayersAndRoles(['Imp', 'Spy'])
+                this.onSetup(game, player)
+                test(`2 players`, player.info?.text == `<h1>1</h1>`)
+            }
         },
         {
             "name": "Courtier",
@@ -287,7 +356,7 @@ export const getRoles = () => {
 
                 player.info = {
                     roles: [randomMinion.role.name],
-                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is the role displayed.`
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
                 }
             }
         },
@@ -309,7 +378,30 @@ export const getRoles = () => {
         {
             "name": "Librarian",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)"
+            "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
+            onSetup: function(game, player) {
+                const randomOutsider = randomOf(...game.getOutsiders())
+
+                if (randomOutsider == null) {
+                    player.info = { text: 'There are no Outsiders in this game.' }
+                    return
+                }
+
+                const randomTownsfolk = randomOf(...game.getPlayersExcept([player.name, randomOutsider.name]))
+                if (randomTownsfolk == null) {
+                    player.info = null
+                    return
+                }
+                
+                const playersDisplayed = randomizeArray([randomOutsider, randomTownsfolk])
+
+                const outsiderName = randomOutsider.isDrunk? 'Drunk': randomOutsider.role.name
+
+                player.info = {
+                    roles: [outsiderName],
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
+                }
+            }
         },
         {
             "name": "Lycanthrope",
