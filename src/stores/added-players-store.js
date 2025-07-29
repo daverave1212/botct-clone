@@ -1,8 +1,6 @@
 import { get, writable } from 'svelte/store'
 import { getLocalStorageObject, hasLocalStorageObject, localStorageWritable, setLocalStorageObject } from '../lib/svelteUtils'
 import { NO_PRIORITY, getNightlyRolePriority, getRole, getRoles, getSetupRolePriority } from '../lib/Database'
-import { isSecretBOTCT } from './secret-botct-store'
-import { getBOTCTNightlyRolePriority, getBOTCTSetupRolePriority } from '../lib/BOTCTDatabase'
 
 export const addedPlayers = localStorageWritable('addedPlayers', [])
 

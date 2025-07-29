@@ -18,8 +18,6 @@
     import { randomInt } from "../../lib/utils";
     import { onMount } from "svelte";
 
-    let isSecretBOTCT = false
-
     function onAddClick() {
         $hasAddPlayerTooltip = false
         addPlayer()
@@ -47,9 +45,6 @@
                     addPlayer({ isEditMode: false, subtitle: 'Player' + i})
                 }, 100 * i)
             }
-        }
-        if (searchParams.get('botct')) {
-            isSecretBOTCT = true
         }
     })
 

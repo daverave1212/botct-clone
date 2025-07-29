@@ -5,7 +5,7 @@ import { goto } from '$app/navigation';
 import { browser } from '$app/environment'
 
 // On each request, always send the user data as a header
-export async function fetchGame(method, url) {
+export async function fetchGame(method, url, data) {
     if (!browser) {
         throw `Not in browser`
     }

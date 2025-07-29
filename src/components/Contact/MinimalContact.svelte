@@ -24,7 +24,7 @@
 </script>
 
 
-<div class="contact shadowed rounded">
+<div class="contact shadowed rounded bg-white">
     <div class="header {isDead? 'dead': ''}">
         <div class="picture-wrapper" on:click={toggleContent}>
             <!-- svelte-ignore a11y-missing-attribute -->

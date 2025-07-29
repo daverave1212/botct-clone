@@ -1,32 +1,39 @@
 import { getGame } from "./games";
 
-const isRoomAdmin = (user, params) => getGame(user.roomCode)?.privateKey == user.privateKey
+const roomAdmin = (user, params) => getGame(user.roomCode)?.privateKey == user.privateKey
+const anyone = () => true
 
 const rules = {
     'default': {
-        GET: () => true,
-        POST: () => true,
-        PUT: () => true,
-        DELETE: () => true,
+        GET: anyone,
+        POST: anyone,
+        PUT: anyone,
+        DELETE: anyone,
     },
     'api': {
         'game': {
-            GET: _ => true,
+            GET: anyone,
     
             '*': {
-                GET: _ => true,
-                POST: _ => true,
+                GET: anyone,
+                POST: anyone,
 
                 'player': {
-                    POST: _ => true,
+                    POST: anyone,
 
                     '*': {
-                        DELETE: isRoomAdmin,
+                        DELETE: roomAdmin,
 
                         'dead': {
-                            POST: isRoomAdmin
+                            POST: roomAdmin
                         }
                     }
+                },
+                'end-day': {
+                    POST: roomAdmin
+                },
+                'start': {
+                    POST: roomAdmin
                 }
             }
         },

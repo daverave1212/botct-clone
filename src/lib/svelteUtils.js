@@ -97,15 +97,15 @@ export function getLocalStorageObject(name) {
 }
 export function setLocalStorageObject(name, obj) {
     if (browser) {
-        window.localStorage.setItem(name, JSON.stringify(obj))
+        if (obj == null) {
+            window.localStorage.removeItem(name)  
+        } else {
+            window.localStorage.setItem(name, JSON.stringify(obj))
+        }
     }
 }
 
 export function localStorageWritable(name, defaultValue) {
-    const lsValue = getLocalStorageObject(name)
-    if (browser) {
-        
-    }
     const theWritable = writable(hasLocalStorageObject(name) ?  getLocalStorageObject(name) : defaultValue)
     theWritable.subscribe(newWritable => {
         setLocalStorageObject(name, newWritable)

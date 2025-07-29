@@ -6,6 +6,7 @@
 </style>
 
 <script>
+	import { GamePhases } from '$lib/shared-lib/GamePhases.js';
     import { fetchGame } from '../../../lib/online-utils.js';
     import { me } from '../../../stores/online/local/me.js';
     import { roomCode } from '../../../stores/online/local/room.js';
@@ -31,5 +32,9 @@
         const response = await fetchGame('GET', `/api/game`)
         console.log(response)
     }}>See All Games</button>
+
+    <button class="btn gray" on:click={async () => {
+        console.log({GamePhases})
+    }}>Check Shared Lib</button>
 
 </div>

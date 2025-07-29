@@ -1,11 +1,8 @@
+import { GamePhases } from "$lib/shared-lib/GamePhases"
+import { createRandomCode } from "./utils"
 
 
-export const games = {}
 
-function createRandomCode(length=3) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
 
 function generateRandomRoomCode() {
     let randomRoomCode
@@ -15,6 +12,25 @@ function generateRandomRoomCode() {
     return randomRoomCode
 }
 
+
+
+const INFO_TEMPLATE = {
+    roles: ['Professor', 'Investigator'],
+    text: ''
+}
+
+const PLAYER_DEFAULT = {
+    name: 'Default',
+    src: 'user.png',
+    privateKey: null,
+
+    isDead: false,
+    role: null,
+    info: null,             // if info != null, on client side, it shows exactly the info as rendered HTML
+
+    changedAlignment: null  // 'evil' 'good'
+}
+export const games = {}
 class Game {
 
     ownerName
@@ -24,16 +40,74 @@ class Game {
 
     playersInRoom
 
+    phase
+    countdownRemaining
+
+    countdownStart
+    countdownDuration
+
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
         this.privateKey = createRandomCode(6)
 
         this.playersInRoom = []
+        this.phase = GamePhases.NOT_STARTED
     }
+
+    nextDay() {
+        this.phase = GamePhases.NIGHT
+        this.countdownRemaining = 8 * 1000
+
+        this.countdownStart = Date.now()
+        this.countdownDuration = 8 * 1000
+
+        let startCountdownIntervalId
+        startCountdownIntervalId = setInterval(() => {
+            if (this.countdownRemaining <= 0) {
+                clearInterval(startCountdownIntervalId)
+                this.countdownRemaining = null
+                
+                this.countdownStart = null
+                this.countdownDuration = null
+                this.phase = GamePhases.DAY
+                return
+            }
+            this.countdownRemaining -= 1000
+        }, 1000)
+    }
+
+    start() {
+        this.phase = GamePhases.COUNTDOWN
+        this.countdownRemaining = 5 * 1000
+
+        this.countdownStart = Date.now()
+        this.countdownDuration = 5 * 1000
+
+        let startCountdownIntervalId
+        startCountdownIntervalId = setInterval(() => {
+            if (this.countdownRemaining <= 0) {
+                clearInterval(startCountdownIntervalId)
+                this.countdownRemaining = null
+
+                this.countdownStart = null
+                this.countdownDuration = null
+
+                this.nextDay()
+                return
+            }
+            this.countdownRemaining -= 1000
+        }, 1000)
+    }
+
+
 
     getPlayerAt(i) {
         return this.playersInRoom[i]
+    }
+
+    getPlayer(name) {
+        return this.playersInRoom.find(p => p.name == name)
     }
 
     addPlayer(player) {
@@ -53,11 +127,18 @@ class Game {
             ownerName: this.ownerName,
             roomCode: this.roomCode,
             privateKey: this.privateKey,
-            playersInRoom: this.playersInRoom
+            playersInRoom: this.playersInRoom,
+
+            countdownRemaining: this.countdownRemaining,
+            countdownStart: this.countdownStart,
+            countdownDuration: this.countdownDuration,
+            phase: this.phase,
         }
     }
 
 }
+
+
 
 export function createNewGame(player) {
     const game = new Game(player.name)
@@ -76,8 +157,8 @@ export function addPlayerToGameST(player, roomCode) {
     }
 
     game.addPlayer({
+        ...PLAYER_DEFAULT,
         ...player,
-        isDead: false
     })
     return 200
 }
@@ -94,4 +175,35 @@ export function gameAndPlayerIExist(params) {
         return false
     }
     return true
+}
+
+export function findGameST(params) {
+    const { roomCode, name } = params
+    
+    if (roomCode == null) {
+        return { statusCode: 400 }
+    }
+
+    const game = getGame(roomCode)
+    if (game == null) {
+        return { statusCode: 404 }
+    }
+
+    return { game, statusCode: 200 }
+}
+
+export function findGameAndPlayerST(params) {
+    const { game, statusCode } = findGameST(params)
+    if (statusCode != 200) {
+        return { statusCode }
+    }
+    
+    if (params.name == null) {
+        return { statusCode: 400 }
+    }
+    const player = game.playersInRoom.find(p => p.name == params.name)
+    if (player == null) {
+        return { statusCode: 400 }
+    }
+    return { game, player, statusCode: 200 }
 }

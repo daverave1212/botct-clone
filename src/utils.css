@@ -169,6 +169,10 @@
     }
 }
 
+.background-white, .bg-white {
+    background-color: white;
+}
+
 
 
 .cards {

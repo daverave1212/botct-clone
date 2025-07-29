@@ -9,13 +9,18 @@ export async function DELETE({ request, params }) {
     }
 
     const game = getGame(params.roomCode)
-    const playerI = params.i
+    const playerName = params.name
 
-    if (game == null || playerI == null || playerI < 0 || playerI >= game.playersInRoom.length) {
+    if (game == null || playerName == null) {
+        return response(null, 404)
+    }
+    
+    const player = game.getPlayer(playerName)
+    if (player == null) {
         return response(null, 404)
     }
 
-    game.playersInRoom = game.playersInRoom.filter((_, i) => i != params.i)
+    game.playersInRoom = game.playersInRoom.filter(p => p.name != playerName)
 
     return response(null, 200)
 }

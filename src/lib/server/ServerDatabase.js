@@ -268,7 +268,27 @@ export const getRoles = () => {
         {
             "name": "Investigator",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing that 1 of 2 players is a particular Minion."
+            "effect": "You start knowing that 1 of 2 players is a particular Minion.",
+            onSetup: function(game, player) {
+                const minions = game.playersInRoom.filter(p =>
+                    (p.role.isEvil || p.changedAlignment == 'evil') &&
+                    !p.role.isDemon
+                )
+                const townsfolk = game.playersInRoom.filter(p => !p.role.isEvil)
+
+                const minionsShuffled = randomizeArray(minions)
+                const townsfolkShuffled = randomizeArray(townsfolk)
+
+                const randomMinion = minionsShuffled[0]
+                const randomTownsfolk = townsfolkShuffled[0]
+                
+                const playersDisplayed = randomizeArray([randomMinion, randomTownsfolk])
+
+                player.info = {
+                    roles: [randomMinion.role.name],
+                    text: `Either <em>${playersDisplayed[0].name}</em> or <em>${playersDisplayed[1].name}</em> is the role displayed.`
+                }
+            }
         },
         {
             "name": "Juggler",

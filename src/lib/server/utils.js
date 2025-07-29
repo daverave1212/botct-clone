@@ -28,32 +28,30 @@ export function isAuthorizedForGame(request, roomCode) {
     return false
 }
 
-export function assertGameRequestST(request, roomCode, playerI='unset') {
-    if (roomCode == null) {
-        return 422
-    }
-    const game = getGame(roomCode)
-    if (game == null) {
-        return 404
-    }
+export function createRandomCode(length=3) {
+    const chars = '0123456789';
+    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
-    if (request.method != 'GET') {
-        if (!isAuthorizedForGame(request, roomCode)) {
-            return 401
-        }
+export function randomizeArray(array_a){
+    var iRandomize;
+    for(iRandomize = 0; iRandomize < array_a.length; iRandomize++){
+        var randomizeArrayIndex = randomInt(0, array_a.length - 1);
+        var auxRandomize = array_a[iRandomize];
+        array_a[iRandomize] = array_a[randomizeArrayIndex];
+        array_a[randomizeArrayIndex] = auxRandomize;
     }
+    return array_a
+}
 
-    // TODO: from here, it's weird. don't do it like this
-    
-    if (playerI == 'unset') {
-        return 200
-    }
-
-    // TODO: 
-    const player = game.playersInRoom[playerI]
-    if (player == null) {
-        return 404
-    }
-
-
+export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to return true; */
+    var c = randomInt(1, 100);
+    if(c <= chance) return true;
+    return false;
+}
+export function randomInt(low, high){
+    return Math.floor(Math.random() * (high - low + 1) + low);
+}
+export function randomOf(...args){
+    return args[randomInt(0, args.length - 1)];
 }

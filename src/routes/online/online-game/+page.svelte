@@ -6,7 +6,7 @@
 </style>
 
 <script>
-	import { playersInRoom, roomCode } from '../../../stores/online/local/room.js';
+	import { phase, playersInRoom, roomCode } from '../../../stores/online/local/room.js';
 
     import Contact from "../../../components/Contact/Contact.svelte";
     import ContactList from "../../../components/ContactList.svelte";
@@ -18,19 +18,21 @@
     import { sortCurrentRolesNightly, sortCurrentRolesSetup } from "../../../stores/added-players-store";
     import { hasExpandTooltip, hasInspectTooltip, hasSetRoleTooltip, hasSortTooltip } from '../../../stores/tutorial-store';
     import { currentlySelectedMod } from '../../../stores/mods-store.js';
-    import { isSecretBOTCT } from '../../../stores/secret-botct-store.js';    
 
     import '../../../components/add-contact-button.css'
     import LocationPicker from '../../../components/LocationPicker.svelte';
     import { chosenScriptRoleNames } from '../../../stores/scripts-store.js';
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
     import InspectRoleDrawer from '../../../components/InspectRoleDrawer.svelte';
-    import { getBOTCTRole } from "../../../lib/BOTCTDatabase";
     import { onDestroy, onMount } from 'svelte';
     import { fetchGame, getPlayersInRoom } from '../../../lib/online-utils.js';
     import SimpleContact from '../../../components/Contact/SimpleContact.svelte';
     import MinimalContact from '../../../components/Contact/MinimalContact.svelte';
+    import { get } from 'svelte/store';
 
+    let countdownStart = null
+    let countdownDuration = null
+    let nSecondsRemaining = null
 
     async function refresh() {
         const gameRoomCode = $roomCode
@@ -38,25 +40,54 @@
             throw `Null roomCode for online-game.`
         }
 
-        const pir = await getPlayersInRoom(gameRoomCode)
-        if (pir == null) {
-            throw `Null players in room with code: ${gameRoomCode}.`
+        const game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+
+        $playersInRoom = game.playersInRoom
+        $phase = game.phase
+
+        if (game.countdownStart != null) {
+            console.log(`Starting countdown:`)
+            console.log({game})
+            countdownStart = game.countdownStart
+            countdownDuration = game.countdownDuration
+        } else {
+            countdownStart = null
+            countdownDuration = null
+            nSecondsRemaining = null
         }
 
-        console.log(pir)
-        $playersInRoom = pir
         
+        // const timeToNextTick = 1 - (Date.now() - countdownStart) % 1000
+        // const startTickAt = countdownDuration / 1000 - Math.floor((Date.now() - countdownStart) / 1000)
+    }
+
+    async function maybeTickCountdown() {
+        if (countdownStart == null) {
+            return
+        }
+        const timeElapsed = Date.now() - countdownStart
+        const timeRemaining = countdownDuration - timeElapsed
+        nSecondsRemaining = Math.floor(timeRemaining / 1000)
+        if (nSecondsRemaining < 0) {
+            console.log(`Referesghing..`)
+            await refresh()
+        }
     }
 
     let refreshIntervalId
+    let countdownIntervalId
     onMount(() => {
         refresh()
         refreshIntervalId = setInterval(async () => {
             await refresh()
         }, 3000)
+        countdownIntervalId = setInterval(() => {
+            maybeTickCountdown()
+        }, 1000)
     })
     onDestroy(() => {
         clearInterval(refreshIntervalId)
+        clearInterval(countdownIntervalId)
     })
     
     $:availableRoles = $chosenScriptRoleNames == null? []: $chosenScriptRoleNames
@@ -65,6 +96,7 @@
         $hasExpandTooltip == false &&
         $playersInRoom.filter(player => player.role == null).length == 0 &&
         $hasSortTooltip
+    $: backgroundColor = $phase == 'night'? 'black': 'white'
     
 
     const statusEffects = [
@@ -85,12 +117,7 @@
     let currentModalObject = null
     function openModalWithRoleName(roleName) {
         $hasInspectTooltip = false
-        console.log(`Opening modal with ${roleName}`)
-        if ($isSecretBOTCT) {
-            currentModalObject = getBOTCTRole(roleName)
-        } else {
-            currentModalObject = getRole(roleName)
-        }
+        currentModalObject = getRole(roleName)
     }
     function closeModal() {
         currentModalObject = null
@@ -196,17 +223,23 @@
         modalOnConfirm = callback
     }
 
-    async function kickPlayer(playerI) {
+    async function startGame() {
         const rc = $roomCode
-        await fetchGame('DELETE', `/api/game/${rc}/player/${playerI}`)
+        await fetchGame('POST', `/api/game/${rc}/start`)
         await refresh()
     }
 
-    async function killPlayer(playerI) {
+    async function kickPlayer(name) {
+        const rc = $roomCode
+        await fetchGame('DELETE', `/api/game/${rc}/player/${name}`)
+        await refresh()
+    }
+
+    async function killPlayer(name) {
         console.log('Killing player')
         const rc = $roomCode
         // await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
-        await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
+        await fetchGame('POST', `/api/game/${rc}/player/${name}/dead`)
         await refresh()
     }
 
@@ -255,7 +288,7 @@
     onClickOutside={() => closeRoleChooserDrawerWithoutSideEffects()}
 ></RoleChooserManyDrawer>
 
-<div class="contact-list-header shadowed">
+<div class="contact-list-header shadowed bg-white">
     <button class="btn" style="background-color: #AA88BB; position: relative;" on:click={onClickOnCleanup}>
         Cleanup
     </button>
@@ -266,122 +299,41 @@
     <button class="btn" style="background-color: #44AACC" on:click={onClickOnSortNight}>Sort for Night</button>
 </div>
 
-<div class="page" style="position: relative;">
-
-    <div class="center-text shadowed rounded" style="padding: 1rem; border: solid #EEE 1px;">
-        <h1>{$roomCode}</h1>
-    </div>
+<div class="page" style="position: relative; background-color: {backgroundColor}">
 
     <ContactList className="margin-top-1">
 
-        {#each $playersInRoom.keys() as i (`${$playersInRoom[i].name}${i}`)}
+        {#if nSecondsRemaining != null}
+            <div style="height: 15vh" class="center-content center-text bg-white">
+                <h1>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h1>
+            </div>
+        {/if}
+
+        {#each $playersInRoom as player (player.name)}
 
             <MinimalContact
-                name={$playersInRoom[i].name}
-                src={$playersInRoom[i].src}
-                isDead={$playersInRoom[i].isDead}
+                name={player.name}
+                src={player.src}
+                isDead={player.isDead}
             >
                 <div class="flex-content wrap margin-top-1">
-                    <button class="btn red" on:click={() => killPlayer(i)}>
+                    <button class="btn red" on:click={() => killPlayer(player.name)}>
                         <img class="icon" src="/images/status/Dead.png"/> Kill
                         <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
                     </button>
-                    <button class="btn gray" on:click={() => kickPlayer(i)}>Kick</button>
+                    <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
                 </div>
             </MinimalContact>
 
-            <!-- <Contact
-                state={{...$playersInRoom[i], subtitle: $playersInRoom[i].name}}
-                setState={(newState) => setPlayerStateI(i, newState)}
-                on:change-role={() => openRoleChangeMenuForPlayerI(i)}
-                on:show-portrait={() => openModalWithRoleName($playersInRoom[i].role)}
-                on:expand={() => $hasExpandTooltip = false}
-            >
-                <div class="">
-                    <div class="flex-content wrap">
-                        <button class="btn blue" on:click={() => openRoleChangeMenuForPlayerI(i)}>Change Role</button>
-                        <button class="btn red" on:click={() => {
-                            const role = getRole($playersInRoom[i]?.role)
-                            const deathReminder = role?.deathReminder
-                            const isPlayerAlive = !$playersInRoom[i].isDead
-                            const isLover = $playersInRoom[i].statusEffects?.includes('Granny')
-                            const isProtected = $playersInRoom[i].statusEffects?.includes('Protected')
-
-                            function maybeShowProtectedModal(callback) {
-                                if (isPlayerAlive && isProtected) {
-                                    openModal("This person is protected. Check if the protection should still apply.", "Kill!", (didKill) => {
-                                        setTimeout(() => {
-                                            callback(didKill)
-                                        }, 100)
-                                    })
-                                } else {
-                                    callback(true)
-                                }
-                            }
-
-                            function maybeShowLoverModal(callback) {
-                                if (isPlayerAlive && isLover) {
-                                    openModal("If the Grandmother is still alive, you should kill the Grandmother too afterwards.", "Kill!", (didKill) => {
-                                        setTimeout(() => {
-                                            callback(didKill)
-                                        }, 100)
-                                    })
-                                } else {
-                                    callback(true)
-                                }
-                            }
-
-                            function maybeShowDeathReminderModal(callback) {
-                                if (isPlayerAlive && deathReminder != null) {
-                                    openModal(deathReminder, "Kill!", (didKill) => {
-                                        setTimeout(() => {
-                                            callback(didKill)
-                                        }, 100)
-                                    })
-                                } else {
-                                    callback(true)
-                                }
-                            }
-
-                            maybeShowProtectedModal(willContinue0 => {
-                                if (!willContinue0) {
-                                    return false
-                                }
-                                maybeShowLoverModal(willContinue1 => {
-                                    if (!willContinue1) {
-                                        return false
-                                    }
-                                    maybeShowDeathReminderModal(willContinue2 => {
-                                        if (!willContinue2) {
-                                            return false
-                                        }
-                                        togglePlayerDead(i)
-                                    })
-                                })
-                            })
-
-                        }}><img class="icon" src="/images/status/Dead.png"/> {$playersInRoom[i]?.isDead? 'Revive': 'Kill'}</button>
-                    </div>
-                    <div class="flex-content wrap margin-top-1">
-                        {#each statusEffects as statusEffect}
-                            <button class="btn" style="color: black;" on:click={()=>onClickOnStatusEffect(i, statusEffect)}> <img class="icon" src="/images/status/{statusEffect}.png"/> {statusEffect} </button>
-                        {/each}
-                    </div>
-                    <div class="flex-content wrap margin-top-1">
-                        <button class="btn gray" on:click={() => onRemovePlayer(i)}>Remove</button>
-                    </div>
-                </div>
-            </Contact>
- -->
-
-
         {/each}
 
-        <button class="add-contact-button shadowed rounded" on:click={onClickOnAdd} style="position: relative;">
-            <div class="center-content flex-column center-text" style="width: 100%; height: 100%; line-height: 100%; font-size: 100%;">
-                +
-            </div>
+        <button class="btn blue" on:click={startGame} style="position: relative;">
+            Start Game
         </button>
+
+        <div class="center-text shadowed rounded bg-white" style="padding: 1rem; border: solid #EEE 1px;">
+            <h1>{$roomCode}</h1>
+        </div>
 
 
         <h3 class="center-text margin-top-1">To restart the game, open the menu and hit Play. All players are saved.</h3>
