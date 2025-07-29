@@ -131,10 +131,10 @@
 
     $: imagePath =
         _src == 'none'?
-            'images/user.png'
+            '/images/user.png'
         :_src != null?
         _src
-        : `images/role-thumbnails/${_name}.webp`
+        : `/images/role-thumbnails/${_name}.webp`
     $: ribbon =
         !hasRibbon? null:
         (ribbonText != null && ribbonColor != null)? { text: ribbonText, color: ribbonColor } :

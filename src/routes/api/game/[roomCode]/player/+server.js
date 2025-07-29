@@ -10,7 +10,10 @@ export async function POST({ request, params }) {
         return response(null, 404)
     }
 
-    addPlayerToGameST(player, game.roomCode)
+    const statusCode = addPlayerToGameST(player, game.roomCode)
+    if (statusCode == 409) {
+        return response(game.getPlayer(player.name), 200)
+    }
 
-    return response(null, 200)
+    return response(player, 200)
 }

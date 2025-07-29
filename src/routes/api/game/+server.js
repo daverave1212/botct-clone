@@ -14,9 +14,11 @@ export async function POST({ request, url, params }) {
     return response({
         roomCode: game.roomCode,
         privateKey: game.privateKey
-    })
+    }, 200)
 }
 
 export async function GET({ request, url, params }) {
-    return response(games.map(game => game.toJsonObject()))
+    const allGames = Object.keys(games)
+        .map(roomCode => games[roomCode].toJsonObject())
+    return response(allGames, 200)
 }
