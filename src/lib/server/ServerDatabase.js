@@ -270,23 +270,24 @@ export const getRoles = () => {
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Minion.",
             onSetup: function(game, player) {
-                const minions = game.playersInRoom.filter(p =>
-                    (p.role.isEvil || p.changedAlignment == 'evil') &&
-                    !p.role.isDemon
-                )
-                const townsfolk = game.playersInRoom.filter(p => !p.role.isEvil)
+                const randomMinion = randomOf(...game.getMinions())
 
-                const minionsShuffled = randomizeArray(minions)
-                const townsfolkShuffled = randomizeArray(townsfolk)
+                if (randomMinion == null) {
+                    player.info = { text: 'There are no minions in this game.' }
+                    return
+                }
 
-                const randomMinion = minionsShuffled[0]
-                const randomTownsfolk = townsfolkShuffled[0]
+                const randomTownsfolk = randomOf(...game.getPlayersExcept([player.name, randomMinion.name]))
+                if (randomTownsfolk == null) {
+                    player.info = null
+                    return
+                }
                 
                 const playersDisplayed = randomizeArray([randomMinion, randomTownsfolk])
 
                 player.info = {
                     roles: [randomMinion.role.name],
-                    text: `Either <em>${playersDisplayed[0].name}</em> or <em>${playersDisplayed[1].name}</em> is the role displayed.`
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is the role displayed.`
                 }
             }
         },
@@ -474,41 +475,47 @@ export const getRoles = () => {
             "effect": "If you died today or tonight, the Demon may choose 2 players (not another Demon) to swap characters.",
             deathReminder: "The Demon may choose 2 players to swap characters.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Butler",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Damsel",
             "difficulty": EXPERIMENTAL,
             "effect": "All Minions know a Damsel is in play. If a Minion publicly guesses you (once), your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Drunk",
             "difficulty": TROUBLE_BREWING,
             "effect": "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Golem",
             "difficulty": EXPERIMENTAL,
             "effect": "You may only nominate once per game. When you do, if the nominee is not the Demon, they die.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Goon",
             "difficulty": BAD_MOON_RISING,
             "effect": "Each night, the 1st player to choose you with their ability is drunk until dusk. You become their alignment <i>(alternatively, you <b>know</b> their alignment).</i>.",
             ribbonText: "OUTSIDER",
+            isOutsider: true,
             ribbonColor: MORNING_COLOR
         },
         {
@@ -516,35 +523,40 @@ export const getRoles = () => {
             "difficulty": EXPERIMENTAL,
             "effect": "If you died today or tonight, the Minion & Demon players may choose new Minion & Demon characters to be.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Heretic",
             "difficulty": EXPERIMENTAL,
             "effect": "Whoever wins, loses & whoever loses, wins, even if you are dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Klutz",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "When you learn that you died, publicly choose 1 alive player: if they are evil, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Lunatic",
             "difficulty": BAD_MOON_RISING,
             "effect": "You think you are a Demon, but you are not. The Demon knows who you are & who you choose at night.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Moonchild",
             "difficulty": BAD_MOON_RISING,
             "effect": "When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Mutant",
@@ -552,77 +564,88 @@ export const getRoles = () => {
             "effect": "If you ever claim to be or insinuate you are an (or any) Outsider, you die.",
             "notes": "If you are mad about being an Outsider, you might be executed.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Ogre",
             "difficulty": EXPERIMENTAL,
             "effect": "On your 1st night, choose a player (not yourself): you become their alignment (you dont know which) even if drunk or poisoned.”",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Plague Doctor",
             "difficulty": EXPERIMENTAL,
             "effect": "When you die, the Storyteller gains a Minion ability.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Politician",
             "difficulty": EXPERIMENTAL,
             "effect": "If you were the player most responsible for your team losing, you change alignment & win, even if dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Puzzlemaster",
             "difficulty": EXPERIMENTAL,
             "effect": "1 player is drunk, even if you die. If you guess (once) who it is, learn the Demon player, but guess wrong & get false info.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Recluse",
             "difficulty": TROUBLE_BREWING,
             "effect": "You might register as evil & as a Minion or Demon, even if dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Saint",
             "difficulty": TROUBLE_BREWING,
             "effect": "If you die by execution, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Snitch",
             "difficulty": EXPERIMENTAL,
             "effect": "Each Minion gets 3 bluffs.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Sweetheart",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "When you die, 1 player is drunk from now on.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Tinker",
             "difficulty": BAD_MOON_RISING,
             "effect": "You might die at any time.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Zealot",
             "difficulty": EXPERIMENTAL,
             "effect": "If there are 5 or more players alive, you must vote for every nomination.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Assassin",

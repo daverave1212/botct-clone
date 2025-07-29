@@ -7,6 +7,7 @@
 
 <script>
 	import { phase, playersInRoom, roomCode } from '../../../stores/online/local/room.js';
+    import { GamePhases } from '$lib/shared-lib/GamePhases.js'
 
     import Contact from "../../../components/Contact/Contact.svelte";
     import ContactList from "../../../components/ContactList.svelte";
@@ -29,10 +30,15 @@
     import SimpleContact from '../../../components/Contact/SimpleContact.svelte';
     import MinimalContact from '../../../components/Contact/MinimalContact.svelte';
     import { get } from 'svelte/store';
+    import { me } from '../../../stores/online/local/me.js';
+    import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
 
     let countdownStart = null
     let countdownDuration = null
     let nSecondsRemaining = null
+
+    let isMyRoleDrawerOpen = false
+    let isMyInfoDrawerOpen = false
 
     async function refresh() {
         const gameRoomCode = $roomCode
@@ -44,6 +50,9 @@
 
         $playersInRoom = game.playersInRoom
         $phase = game.phase
+
+        const newMe = game.playersInRoom.find(p => p.name == $me.name)
+        $me = newMe
 
         if (game.countdownStart != null) {
             console.log(`Starting countdown:`)
@@ -259,22 +268,49 @@
 </Modal>
 
 <DrawerPage
-    isOpen={currentColor != null}
+    isOpen={isMyInfoDrawerOpen}
     zIndex="486 !important"
-    on:click={() => currentColor = null}
+    on:click={() => 
+        isMyInfoDrawerOpen = false
+    }
 >
-    <div style={`width: 100vw; height: 100vh; background-color: ${currentColor};`}>
-    </div>
+    {#if $me.info != null}
+        <div class="center-content flex-column gap-1 margin-top-4">
+            <div>
+                {#if $me.info.roles != null}
+                    {#each $me.info.roles as roleName (roleName)}
+                        <div class="center-content flex-column gap-1">
+                            <div>
+                                <RoundCardPortrait role={{...getRole(roleName), isBig: true, isValid: true}}/>
+                            </div>
+                            <div>
+                                <h2 class="margin-top-2">
+                                    {@html roleName}
+                                </h2>
+                            </div>
+                        </div>
+                    {/each}
+                {/if}
+            </div>
+            {#if $me.info.text != null}
+                <div>
+                    <p class="margin-top-2 center-text">
+                        {@html $me.info.text}
+                    </p>
+                </div>
+            {/if}
+        </div>
+    {/if}
 </DrawerPage>
 
 <InspectRoleDrawer
-    role={currentModalObject}
-    isOpen={currentModalObject != null}
+    role={getRole($me.role?.name)}
+    isOpen={isMyRoleDrawerOpen}
     setIsOpen={bool => {
-        didOpenAndCloseModalOnce = true
-        closeModal()
+        isMyRoleDrawerOpen = false
     }}
 />
+
 
 <RoleChooserManyDrawer
     isOpen={isRoleChooserOpen}
@@ -303,27 +339,65 @@
 
     <ContactList className="margin-top-1">
 
+        {#if $phase != null && $phase != GamePhases.NOT_STARTED}
+            <div class="center-content center-text" style={`
+                height: 15vh;
+                background-color: ${
+                    $phase == GamePhases.NIGHT?
+                        '#4d1c8c':
+                    $phase == GamePhases.DAY?
+                        'white':
+                    $phase == GamePhases.SETUP?
+                        '#548c1c':
+                    'white'
+                };
+                color: ${
+                    $phase == GamePhases.NIGHT? 'yellow': 'black'
+                }
+            `}>
+                <h1>{
+                    $phase == GamePhases.NIGHT?
+                        '🌙 ':
+                    $phase == GamePhases.DAY?
+                        '☀️ ':
+                    ''
+                }{ $phase?.toUpperCase() }</h1>
+            </div>
+        {/if}
+
         {#if nSecondsRemaining != null}
             <div style="height: 15vh" class="center-content center-text bg-white">
                 <h1>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h1>
             </div>
         {/if}
 
-        {#each $playersInRoom as player (player.name)}
+        {#each ($playersInRoom ?? []) as player (player.name)}
 
-            <MinimalContact
-                name={player.name}
-                src={player.src}
-                isDead={player.isDead}
-            >
-                <div class="flex-content wrap margin-top-1">
-                    <button class="btn red" on:click={() => killPlayer(player.name)}>
-                        <img class="icon" src="/images/status/Dead.png"/> Kill
-                        <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
-                    </button>
-                    <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
-                </div>
-            </MinimalContact>
+            <div style="width: 100%" class="flex-row gap-1">
+                <MinimalContact
+                    name={player.name}
+                    src={player.src}
+                    isDead={player.isDead}
+                >
+                    <div class="flex-content wrap margin-top-1">
+                        <button class="btn red" on:click={() => killPlayer(player.name)}>
+                            <img class="icon" src="/images/status/Dead.png"/> Kill
+                            <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
+                        </button>
+                        <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
+                    </div>
+                </MinimalContact>
+                {#if $me.info != null && $me.name == player.name}
+                    <button class="btn red" on:click={() => {
+                        isMyInfoDrawerOpen = true
+                    }}>See Power</button>
+                {/if}
+                {#if $me.role != null && $me.name == player.name}
+                    <button class="btn colorful" on:click={() => {
+                        isMyRoleDrawerOpen = true
+                    }}>See Role</button>
+                {/if}
+            </div>
 
         {/each}
 

@@ -28,6 +28,10 @@
         console.log(response)
     }}>Get Game (Prompt)</button>
 
+    <button class="btn blue" on:click={async () => {
+        console.log($me)
+    }}>See $me</button>
+
     <button class="btn colorful" on:click={async () => {
         const response = await fetchGame('GET', `/api/game`)
         console.log(response)

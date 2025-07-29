@@ -42,7 +42,8 @@
     async function onJoin() {
         const inputRoomCode = prompt('Enter room code.')
         $roomCode = inputRoomCode
-        const response = await fetchGame('POST', `/api/game/${inputRoomCode}/player`)
+        const newMe = await fetchGame('POST', `/api/game/${inputRoomCode}/player`)
+        $me = newMe
         goto('/online/online-game')
     }
 

@@ -20,22 +20,17 @@ export async function handle({ event, resolve }) {
         const { request, url } = event
         const { method } = request
 
-        console.log('a')
         if (url.pathname.startsWith('/api') == false) {
             return resolve(event)
         }
 
-        console.log('b')
         const urlParts = getRelativeUrlParts(request.url)    
         const rule = getRuleByUrlParts(urlParts)
 
-        console.log('c')
         if (rule[method] == null) {
-            console.log('d')
             console.warn(`Url ${url.pathname} does not have a rule.`)
             return resolve(event)
         }
-        console.log('e')
     } catch (e) {
         console.error('ERROR')
         console.log(e)

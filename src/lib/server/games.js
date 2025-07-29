@@ -1,5 +1,6 @@
 import { GamePhases } from "$lib/shared-lib/GamePhases"
-import { createRandomCode } from "./utils"
+import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
+import { createRandomCode, randomizeArray } from "./utils"
 
 
 
@@ -79,14 +80,18 @@ class Game {
 
     start() {
         this.phase = GamePhases.COUNTDOWN
-        this.countdownRemaining = 5 * 1000
+        this.countdownRemaining = 8 * 1000
 
         this.countdownStart = Date.now()
-        this.countdownDuration = 5 * 1000
+        this.countdownDuration = 8 * 1000
+
+        this.assignRoles()
 
         let startCountdownIntervalId
         startCountdownIntervalId = setInterval(() => {
             if (this.countdownRemaining <= 0) {
+                this.doRolesSetup()
+
                 clearInterval(startCountdownIntervalId)
                 this.countdownRemaining = null
 
@@ -100,8 +105,25 @@ class Game {
         }, 1000)
     }
 
+    assignRoles() {
+        this.playersInRoom[0].role = getRole('Dreamer')
+        this.playersInRoom[1].role = getRole('Investigator')
+        this.playersInRoom[2].role = getRole('Spy')
+    }
+
+    doRolesSetup() {
+        const sortedPlayers = this.getPlayersSortedForSetup()
+        for (const player of sortedPlayers) {
+            player.role?.onSetup?.(this, player)
+        }
+    }
 
 
+    getPlayers() { return this.playersInRoom }
+    getPlayersExcept(nameOrNames) { 
+        const names = Array.isArray(nameOrNames)? nameOrNames: [nameOrNames]
+        return this.playersInRoom.filter(p => !names.includes(p.name))
+    }
     getPlayerAt(i) {
         return this.playersInRoom[i]
     }
@@ -134,6 +156,22 @@ class Game {
             countdownDuration: this.countdownDuration,
             phase: this.phase,
         }
+    }
+
+    getPlayersSortedForSetup() {
+        return this.playersInRoom.sort((a, b) => getSetupRolePriority(a.role) - getSetupRolePriority(b.role))
+    }
+    getPlayersSortedForNight() {
+        return this.playersInRoom.sort((a, b) => getNightlyRolePriority(a.role) - getNightlyRolePriority(b.role))
+    }
+    getMinions() {
+        return randomizeArray(this.playersInRoom.filter(p =>
+            (p.role.isEvil || p.changedAlignment == 'evil') &&
+            !p.role.isDemon
+        ))
+    }
+    getTownsfolk() {
+        return randomizeArray(this.playersInRoom.filter(p => !p.role.isEvil))
     }
 
 }
