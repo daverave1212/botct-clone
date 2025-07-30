@@ -1,7 +1,7 @@
 import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, test, times } from "./utils"
 import { browser } from '$app/environment'
 import { addPlayerToGameST, makeTestGame } from "./games"
-import { StatusEffectDuration,SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
+import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
 
 export const WEREWOLVES = 'werewolves'
 export const TOWNSFOLK = 'townsfolk'
@@ -471,7 +471,34 @@ export const getRoles = () => {
         {
             "name": "Monk",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight."
+            "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight.",
+            onNightStart(game, player) {
+                const me = game.getPlayer(player?.name || player)
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+                console.log(`!!! Did set my available action to: `)
+                console.log(me.availableAction)
+            },
+            doPlayerAction(game, me, actionData) {
+                if (me?.availableAction == null) {  // Prevent multiple requests
+                    return
+                }
+                console.log(`Doing plaer action upon ${actionData}`)
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                chosenPlayer.statusEffects.push({
+                    name: 'Protected (Monk)',
+                    duration: StatusEffectDuration.UNTIL_NIGHT,
+                    onDeath: source => {
+                        if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
+                            return false
+                        }
+                        return true
+                    }
+                })
+                me.availableAction = null
+            }
         },
         {
             "name": "Nightwatchman",
@@ -1006,6 +1033,22 @@ export const getRoles = () => {
             "effect": "Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.",
             isDemon: true,
             isEvil: true,
+            onNightStart(game, player) {
+                const me = game.getPlayer(player?.name || player)
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+            },
+            doPlayerAction(game, me, actionData) {
+                if (me?.availableAction == null) {  // Prevent multiple requests
+                    return
+                }
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                console.log(`Klling player ${chosenPlayer.name}`)
+                game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
+                me.availableAction = null
+            }
         },
         {
             "name": "Kazali",

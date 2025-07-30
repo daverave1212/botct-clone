@@ -1,4 +1,4 @@
-import { GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
+import { ActionTypes, ActionDurations, GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 import { roomCode } from "../../stores/online/local/room"
 import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
 import { createRandomCode, randomizeArray } from "./utils"
@@ -25,6 +25,10 @@ const INFO_TEMPLATE = {
     roles: ['Professor', 'Investigator'],
     text: ''
 }
+const AVAILABLE_ACTION_TEMPLATE = {
+    type: ActionTypes.CHOOSE_PLAYER,
+    clientDuration: ActionDurations.UNTIL_USED_OR_DAY   // Only used in client to prevent multiple requests
+}
 const STATUS_EFFECT_TEMPLATE = {
     name: 'Protected',
     duration: StatusEffectDuration.UNTIL_NIGHT,
@@ -39,12 +43,32 @@ const PLAYER_DEFAULT = {
     isDead: false,
     role: null,
     info: null,             // if info != null, on client side, it shows exactly the info as rendered HTML
+    availableAction: null,  // if availableAction != null, on client side, it shows the action based on the object. See template above.
 
     changedAlignment: null, // 'evil' 'good'
     isDrunk: false,
     statusEffects: []
-
 }
+class Player {
+    constructor({ name, src }) {
+        this.name = name
+        this.src = src
+        this.privateKey = null
+
+        this.role = null
+        this.isDrunk = false
+        
+        this.isDead = false
+        this.changedAlignment = null
+        
+        this.info = null
+        this.availableAction = null
+
+        this.statusEffects = []
+    }
+}
+
+
 export const games = {}
 class Game {
 
@@ -70,66 +94,44 @@ class Game {
         this.phase = GamePhases.NOT_STARTED
     }
 
-    nextDay() {
-        this.phase = GamePhases.NIGHT
-        this.countdownRemaining = 4 * 1000
-
-        this.countdownStart = Date.now()
-        this.countdownDuration = 4 * 1000
-
-        let startCountdownIntervalId
-        startCountdownIntervalId = setInterval(() => {
-            if (this.countdownRemaining <= 0) {
-                clearInterval(startCountdownIntervalId)
-                this.countdownRemaining = null
-                
-                this.countdownStart = null
-                this.countdownDuration = null
-                this.phase = GamePhases.DAY
-                return
-            }
-            this.countdownRemaining -= 1000
-        }, 1000)
+    goToNightThenDayAsync() {
+        this.startNight()
+        this.doAfterCountdown(20000, () => {
+            this.startDay()
+        })
     }
+    startNight() {
+        console.log(`🌙 Starting night`)
+        this.phase = GamePhases.NIGHT
+        const sortedPlayers = this.getPlayersSortedForNight()
+        for (const player of sortedPlayers) {
+            player.role?.onNightStart?.(this, player)
+        }
+    }
+    startDay() {
+        this.phase = GamePhases.DAY
+        for (const player of this.playersInRoom) {
+            player.role?.onDayStart?.(this, player)
+        }
+    }
+
+
 
     start() {
         this.phase = GamePhases.COUNTDOWN
-        this.countdownRemaining = 4 * 1000
-
-        this.countdownStart = Date.now()
-        this.countdownDuration = 4 * 1000
-
         this.assignRoles()
 
-        let startCountdownIntervalId
-        startCountdownIntervalId = setInterval(() => {
-            if (this.countdownRemaining <= 0) {
-                this.doRolesSetup()
-
-                clearInterval(startCountdownIntervalId)
-                this.countdownRemaining = null
-
-                this.countdownStart = null
-                this.countdownDuration = null
-
-                this.nextDay()
-                return
-            }
-            this.countdownRemaining -= 1000
-        }, 1000)
+        this.doAfterCountdown(4000, () => {
+            this.doRolesSetup()
+            this.goToNightThenDayAsync()
+        })
     }
 
     assignRoles() {
         if (IS_DEBUG) {
-            const randomizedPlayers = randomizeArray([...this.playersInRoom])
-            randomizedPlayers[0].role = getRole('Spy')
-            randomizedPlayers[1].role = getRole('Investigator')
-            randomizedPlayers[2].role = getRole('Spy')
-            randomizedPlayers[3].role = getRole('Mutant')
-            randomizedPlayers[4].role = getRole('Imp')
-            // randomizedPlayers[5].role = getRole('Librarian')
-
-            this.getPlayer('Dave').role = getRole('Clockmaker')
+            this.setPlayersAndRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
+            this.playersInRoom[0].role = getRole('Monk')
+            this.playersInRoom[1].role = getRole('Imp')
         }
     }
 
@@ -165,21 +167,6 @@ class Game {
         }
         return true
     }
-
-    toJsonObject() {
-        return {
-            ownerName: this.ownerName,
-            roomCode: this.roomCode,
-            privateKey: this.privateKey,
-            playersInRoom: this.playersInRoom,
-
-            countdownRemaining: this.countdownRemaining,
-            countdownStart: this.countdownStart,
-            countdownDuration: this.countdownDuration,
-            phase: this.phase,
-        }
-    }
-
     getPlayersSortedForSetup() {
         return this.playersInRoom.sort((a, b) => getSetupRolePriority(a.role) - getSetupRolePriority(b.role))
     }
@@ -233,7 +220,7 @@ class Game {
         }
 
         if (player.role.onDeath != null) {
-            const result = statusEffect.onDeath(source)
+            const result = player.role.onDeath(source)
             if (result == false) {
                 return
             }
@@ -241,6 +228,48 @@ class Game {
 
         player.isDead = true
     }
+
+    doPlayerActionST(p, actionData) {
+        const player = this.getPlayer(p?.name || p)
+        if (player == null) {
+            return 404
+        }
+        const actionFunc = player?.role?.doPlayerAction
+        if (actionFunc == null) {
+            return 400
+        }
+        console.log(`Doing player action...`)
+        actionFunc(this, player, actionData)
+    }
+
+
+    // Technical Utils
+    toJsonObject() {
+        return {
+            ownerName: this.ownerName,
+            roomCode: this.roomCode,
+            privateKey: this.privateKey,
+            playersInRoom: this.playersInRoom,
+
+            countdownRemaining: this.countdownRemaining,
+            countdownStart: this.countdownStart,
+            countdownDuration: this.countdownDuration,
+            phase: this.phase,
+        }
+    }
+    doAfterCountdown(duration, cb) {
+        if (this.countdownStart != null || this.countdownDuration != null) {
+            throw `Can not start another countdown while one is already active.`
+        }
+        this.countdownStart = Date.now()
+        this.countdownDuration = duration
+        setTimeout(() => {
+            this.countdownStart = null
+            this.countdownDuration = null
+            cb()
+        }, duration)
+    }
+    
 
     // Testing only
     setRoles(arr) {
@@ -284,10 +313,8 @@ export function addPlayerToGameST(player, roomCode) {
         return 409
     }
 
-    game.addPlayer({
-        ...PLAYER_DEFAULT,
-        ...player,
-    })
+    const gamePlayer = new Player(player)
+    game.addPlayer(gamePlayer)
     return 200
 }
 

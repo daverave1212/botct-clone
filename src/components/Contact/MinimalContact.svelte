@@ -5,6 +5,8 @@
     import './Contact.css'
     import { addedPlayers } from '../../stores/added-players-store';
 
+    const dispatch = createEventDispatcher()
+
     export let name
     export let src
     export let isDead
@@ -18,6 +20,7 @@
 
 
     function toggleContent() {
+        dispatch('contact-click', name)
         isExpanded = !isExpanded
     }
 
