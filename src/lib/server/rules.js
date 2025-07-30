@@ -1,7 +1,12 @@
+import { ActionTypes } from "$lib/shared-lib/GamePhases";
 import { getGame } from "./games";
 
 const roomAdmin = (user, params) => getGame(user.roomCode)?.privateKey == user.privateKey
 const anyone = () => true
+const userWithChoosePlayerAction = (user, params) =>
+    getGame(user?.roomCode)?.
+    getPlayer(user?.name)?.
+    availableAction?.type == ActionTypes.CHOOSE_PLAYER
 
 const rules = {
     'default': {
@@ -23,6 +28,10 @@ const rules = {
 
                     '*': {
                         DELETE: roomAdmin,
+
+                        'choose': {
+                            POST: userWithChoosePlayerAction
+                        },
 
                         'dead': {
                             POST: roomAdmin

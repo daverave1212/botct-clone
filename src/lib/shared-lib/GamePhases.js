@@ -6,6 +6,14 @@ export const GamePhases = {
     NIGHT: 'night'
 }
 
+export const ActionTypes = {
+    CHOOSE_PLAYER: 'choose-player'
+}
+export const ActionDurations = {
+    UNTIL_USED: 'until-used',
+    UNTIL_USED_OR_DAY: 'until-used-or-day'
+}
+
 export const TimerDurations = {
     SETUP: 10 * 1000,
     NIGHT: 20 * 1000

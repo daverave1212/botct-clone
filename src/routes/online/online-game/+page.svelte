@@ -7,7 +7,7 @@
 
 <script>
 	import { phase, playersInRoom, roomCode } from '../../../stores/online/local/room.js';
-    import { GamePhases } from '$lib/shared-lib/GamePhases.js'
+    import { GamePhases, ActionDurations, ActionTypes } from '$lib/shared-lib/GamePhases.js'
 
     import Contact from "../../../components/Contact/Contact.svelte";
     import ContactList from "../../../components/ContactList.svelte";
@@ -39,6 +39,7 @@
 
     let isMyRoleDrawerOpen = false
     let isMyInfoDrawerOpen = false
+    let isActionChoosePlayerDrawerOpen = false
 
     async function refresh() {
         const gameRoomCode = $roomCode
@@ -51,8 +52,12 @@
         $playersInRoom = game.playersInRoom
         $phase = game.phase
 
-        const newMe = game.playersInRoom.find(p => p.name == $me.name)
-        $me = newMe
+        const newMe = game?.playersInRoom?.find(p => p.name == $me.name)
+        if (newMe) {
+            $me = newMe
+            console.log(`New Me!!!`)
+            console.log({newMe})
+        }
 
         if (game.countdownStart != null) {
             console.log(`Starting countdown:`)
@@ -64,10 +69,6 @@
             countdownDuration = null
             nSecondsRemaining = null
         }
-
-        
-        // const timeToNextTick = 1 - (Date.now() - countdownStart) % 1000
-        // const startTickAt = countdownDuration / 1000 - Math.floor((Date.now() - countdownStart) / 1000)
     }
 
     async function maybeTickCountdown() {
@@ -252,6 +253,30 @@
         await refresh()
     }
 
+    async function onUsePowerClick() {
+        const myPower = $me.availableAction
+        console.log({myPower})
+        if (myPower == null) {
+            return
+        }
+        switch (myPower.type) {
+            case ActionTypes.CHOOSE_PLAYER:
+                isActionChoosePlayerDrawerOpen = true
+                return
+        }
+    }
+
+    async function actionChoosePlayer(playerName) {
+        const shouldHideAction =
+            $me.availableAction?.clientDuration == ActionDurations.UNTIL_USED ||
+            $me.availableAction?.clientDuration == ActionDurations.UNTIL_USED_OR_DAY
+        if (shouldHideAction) {
+            $me = {...$me, availableAction: null}
+        }
+        await fetchGame('POST', `/api/game/${$roomCode}/player/${playerName}/choose`)
+        await refresh()
+    }
+
 </script>
 
 <Modal isOpen={isModalOpen} setIsOpen={bool => isModalOpen = bool}>
@@ -266,6 +291,31 @@
         </div>
     </div>
 </Modal>
+
+<DrawerPage
+    isOpen={isActionChoosePlayerDrawerOpen}
+    zIndex="487 !important",
+    on:click={() => isActionChoosePlayerDrawerOpen = false}
+>
+    <div class="margin-top-4">
+        {#each ($playersInRoom ?? []) as player (player.name)}
+
+            <div style="width: 100%" class="flex-row gap-1">
+                <MinimalContact
+                    name={player.name}
+                    src={player.src}
+                    isDead={player.isDead}
+                    on:contact-click={evt => {
+                        evt.stopPropagation();
+                        console.log(`Clicked on ${player.name}`)
+                        isActionChoosePlayerDrawerOpen = false
+                        actionChoosePlayer(evt.detail)
+                    }}
+                ></MinimalContact>
+            </div>
+        {/each}
+    </div>
+</DrawerPage>
 
 <DrawerPage
     isOpen={isMyInfoDrawerOpen}
@@ -310,7 +360,6 @@
         isMyRoleDrawerOpen = false
     }}
 />
-
 
 <RoleChooserManyDrawer
     isOpen={isRoleChooserOpen}
@@ -391,6 +440,9 @@
                     <button class="btn red" on:click={() => {
                         isMyInfoDrawerOpen = true
                     }}>See Power</button>
+                {/if}
+                {#if $me.availableAction != null && $me.name == player.name}
+                    <button class="btn red" on:click={onUsePowerClick}>Use Power</button>
                 {/if}
                 {#if $me.role != null && $me.name == player.name}
                     <button class="btn colorful" on:click={() => {

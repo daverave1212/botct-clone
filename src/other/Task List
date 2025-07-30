@@ -1,4 +1,5 @@
 
+Make all kills at night delayed
 Implement action at night for characters
 Refactor intervals on the server to just setTimeout
 Fix debug-only testing functionalities on server
