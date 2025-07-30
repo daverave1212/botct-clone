@@ -1,4 +1,4 @@
-import { GamePhases } from "$lib/shared-lib/GamePhases"
+import { GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 import { roomCode } from "../../stores/online/local/room"
 import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
 import { createRandomCode, randomizeArray } from "./utils"
@@ -16,10 +16,19 @@ function generateRandomRoomCode() {
 }
 
 
+const SOURCE_OF_DEATH_TEMPLATE = {
+    type: SourceOfDeathTypes.DEMON_KILL,
+    player: null
+}
 
 const INFO_TEMPLATE = {
     roles: ['Professor', 'Investigator'],
     text: ''
+}
+const STATUS_EFFECT_TEMPLATE = {
+    name: 'Protected',
+    duration: StatusEffectDuration.UNTIL_NIGHT,
+    onDeath: (source) => true,    // Returns true if should continue death
 }
 
 const PLAYER_DEFAULT = {
@@ -209,6 +218,29 @@ class Game {
         return prevI
     }
 
+    tryKillPlayer(playerOrName, source) {
+        const player = typeof playerOrName === 'string'? this.getPlayer(playerOrName): this.getPlayer(playerOrName.name)
+
+        const playerStatusEffects = [...player.statusEffects]
+
+        for (const statusEffect of playerStatusEffects) {
+            if (statusEffect.onDeath != null) {
+                const result = statusEffect.onDeath(source)
+                if (result == false) {
+                    return
+                }
+            }
+        }
+
+        if (player.role.onDeath != null) {
+            const result = statusEffect.onDeath(source)
+            if (result == false) {
+                return
+            }
+        }
+
+        player.isDead = true
+    }
 
     // Testing only
     setRoles(arr) {

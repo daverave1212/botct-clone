@@ -1,6 +1,7 @@
 import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, test, times } from "./utils"
 import { browser } from '$app/environment'
 import { addPlayerToGameST, makeTestGame } from "./games"
+import { StatusEffectDuration,SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 
 export const WEREWOLVES = 'werewolves'
 export const TOWNSFOLK = 'townsfolk'
@@ -317,7 +318,44 @@ export const getRoles = () => {
         {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
-            "effect": "You start knowing a good player & their character. If the Demon kills them, you die too."
+            "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
+            onSetup: function(game, player) {
+                console.log(`Doing on setup for grandmother`)
+                const townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
+                if (townsfolks.length == 0) {
+                    player.info = {
+                        text: 'No other player found. Nobody is your grandson'
+                    }
+                    return
+                }
+
+                const randomTownsfolk = randomOf(...townsfolks)
+
+                randomTownsfolk.statusEffects.push({
+                    name: 'Grandson',
+                    duration: StatusEffectDuration.PERMANENT,
+                    onDeath(source) {
+                        if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
+                            game.tryKillPlayer(player, { type: SourceOfDeathTypes.OTHER })
+                        }
+                        return true
+                    }
+                })
+            },
+            test() {
+                const game = makeTestGame()
+                game.setPlayersAndRoles(['Grandmother', 'Fool', 'Fool', 'Fool', 'Imp', 'Fool', 'Fool'])
+                game.doRolesSetup()
+
+                const grandsonPlayerI = game.playersInRoom.findIndex(p => p.statusEffects.length != 0)
+                const grandsonPlayer = game.getPlayerAt(grandsonPlayerI)
+                // console.log(game.playersInRoom)
+                // console.log({grandsonPlayer, grandsonPlayerI})
+
+                game.tryKillPlayer(grandsonPlayer, { source: SourceOfDeathTypes.DEMON_KILL })
+
+                test(`Grandma player is dead`, game.getPlayerAt(0).isDead)
+            }
         },
         {
             "name": "High Priestess",

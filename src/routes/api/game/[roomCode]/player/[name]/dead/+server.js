@@ -1,5 +1,6 @@
 import { findGameAndPlayerST } from "../../../../../../../lib/server/games"
 import { isAuthorizedForGame, response } from "../../../../../../../lib/server/utils"
+import { SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 
 export async function POST({ request, params }) {
 
@@ -13,7 +14,7 @@ export async function POST({ request, params }) {
         return response(null, statusCode)
     }
 
-    player.isDead = player.isDead == null? false: !player.isDead
+    game.tryKillPlayer(player, { type: SourceOfDeathTypes.EXECUTION })
 
     return response(null, 200)
 }
