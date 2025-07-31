@@ -23,6 +23,7 @@ const SOURCE_OF_DEATH_TEMPLATE = {
 
 const INFO_TEMPLATE = {
     roles: ['Professor', 'Investigator'],
+    showsRoleDescriptions: false,
     text: ''
 }
 const AVAILABLE_ACTION_TEMPLATE = {
@@ -83,6 +84,7 @@ class Game {
     ownerName
     
     roomCode
+    scriptRoleNames
     privateKey
 
     playersInRoom
@@ -96,6 +98,7 @@ class Game {
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
+        this.scriptRoleNames = []
         this.privateKey = createRandomCode(6)
 
         this.playersInRoom = []
@@ -161,10 +164,7 @@ class Game {
     }
 
     doRolesSetup() {
-        const sortedPlayers = this.getPlayersSortedForSetup()
-        for (const player of sortedPlayers) {
-            player.role?.onSetup?.(this, player)
-        }
+        this.#applyAllEventsAt('onSetup')
     }
 
 
@@ -229,6 +229,20 @@ class Game {
         }
         return prevI
     }
+    getRolesNotInGame() {
+        const playerRoleNames = this.playersInRoom.map(p => p.role.name)
+        const cleanedPlayerRoleNames = playerRoleNames.filter(rn => rn != null) // For safety
+
+        console.log(playerRoleNames.join(', '))
+        console.log(cleanedPlayerRoleNames.join(', '))
+        console.log(this.scriptRoleNames.join(', '))
+
+        const isRoleInGame = rn => cleanedPlayerRoleNames.includes(rn)
+
+        return this.scriptRoleNames
+            .filter(rn => !isRoleInGame(rn))
+            .map(rn => getRole(rn))
+    }
 
     tryKillPlayer(playerOrName, source) {
         const player = typeof playerOrName === 'string'? this.getPlayer(playerOrName): this.getPlayer(playerOrName.name)
@@ -279,9 +293,12 @@ class Game {
     toJsonObject() {
         return {
             ownerName: this.ownerName,
+            
             roomCode: this.roomCode,
             privateKey: this.privateKey,
             playersInRoom: this.playersInRoom,
+            
+            scriptRoleNames: this.scriptRoleNames,
 
             countdownRemaining: this.countdownRemaining,
             countdownStart: this.countdownStart,

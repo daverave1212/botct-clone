@@ -6,7 +6,7 @@
 	import { fetchGame } from '../../../lib/online-utils.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
-    import { roomCode } from '../../../stores/online/local/room.js';
+    import { roomCode, scriptRoleNames } from '../../../stores/online/local/room.js';
 
 
     let isRoleChooserOpen = false
@@ -48,8 +48,22 @@
     }
 
     async function onCreate() {
+        $scriptRoleNames = [    // TODO: Remove this and replace it
+            'Fool',
+            'Monk',
+            'Mutant',
+            'Soldier',
+            'Mathematician',
+            'Librarian',
+            'Investigator',
+            'Imp',
+            'Spy',
+            'Baron',
+            'Poisoner'
+        ]
+
+        const response = await fetchGame('POST', '/api/game', { scriptRoleNames: $scriptRoleNames })
         // privateKey is the same for the owner and the game
-        const response = await fetchGame('POST', '/api/game')
         $me = {...$me, privateKey: response.privateKey }
         console.log({response})
         $roomCode = response.roomCode

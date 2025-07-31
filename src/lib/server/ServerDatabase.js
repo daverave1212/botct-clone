@@ -1034,6 +1034,18 @@ export const getRoles = () => {
             "effect": "Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.",
             isDemon: true,
             isEvil: true,
+            onSetup(game, player) {
+                console.log(`😈 Imp setup`)
+                const townsfolkNotInGame = game.getRolesNotInGame()
+                    .filter(r => !r.isEvil)
+                    .map(r => r.name)
+                console.log(townsfolkNotInGame)
+                player.info = {
+                    roles: townsfolkNotInGame,
+                    showsRoleDescriptions: true,
+                    text: 'These roles are <em>not</em> in this game.'
+                }
+            },
             onNightStart(game, player) {
                 const me = game.getPlayer(player?.name || player)
                 me.availableAction = {

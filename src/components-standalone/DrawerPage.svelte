@@ -99,6 +99,9 @@
 <div class="{sideMenuWrapperClass}" style={style}>
     <div class="{blackOverlayClass}"></div>
     <div class="{sideMenuClass}" on:click={evt => {evt.stopPropagation(); dispatch('click')}}>
+        <div style="position: absolute; top: 2rem; right: 2rem; color: red; opacity: 0.5; font-size: 1.5rem;">
+            ❌
+        </div>
         <slot></slot>
     </div>
 </div>
