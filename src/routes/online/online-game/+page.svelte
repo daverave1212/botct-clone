@@ -41,13 +41,24 @@
     let isMyInfoDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
 
+    let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
     async function refresh() {
+        if (_nFetchRetries >= 3)
+            return
+
         const gameRoomCode = $roomCode
         if (gameRoomCode == null) {
             throw `Null roomCode for online-game.`
         }
 
-        const game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+        let game
+        try {
+            game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+        } catch (e) {
+            _nFetchRetries += 1
+            console.error(e)
+            return
+        }
 
         $playersInRoom = game.playersInRoom
         $phase = game.phase

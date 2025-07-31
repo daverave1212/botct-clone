@@ -352,7 +352,7 @@ export const getRoles = () => {
                 // console.log(game.playersInRoom)
                 // console.log({grandsonPlayer, grandsonPlayerI})
 
-                game.tryKillPlayer(grandsonPlayer, { source: SourceOfDeathTypes.DEMON_KILL })
+                game.tryKillPlayer(grandsonPlayer.name, { source: SourceOfDeathTypes.DEMON_KILL })
 
                 test(`Grandma player is dead`, game.getPlayerAt(0).isDead)
             }
@@ -488,8 +488,9 @@ export const getRoles = () => {
                 console.log(`Doing plaer action upon ${actionData}`)
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 chosenPlayer.statusEffects.push({
-                    name: 'Protected (Monk)',
+                    name: 'Protected',
                     duration: StatusEffectDuration.UNTIL_NIGHT,
+                    onDayStart: () => chosenPlayer.removeStatus('Protected'),
                     onDeath: source => {
                         if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
                             return false
@@ -1045,8 +1046,13 @@ export const getRoles = () => {
                     return
                 }
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
-                console.log(`Klling player ${chosenPlayer.name}`)
-                game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
+
+                chosenPlayer.addStatus({
+                    name: "Targeted By Demon",
+                    onNightEnd: () => {
+                        game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
+                    }
+                })
                 me.availableAction = null
             }
         },

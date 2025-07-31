@@ -66,6 +66,14 @@ class Player {
 
         this.statusEffects = []
     }
+
+    removeStatus(statusEffectName) {
+        this.statusEffects = this.statusEffects.filter(s => s.name != statusEffectName)
+    }
+
+    addStatus(obj) {
+        this.statusEffects.push(obj)
+    }
 }
 
 
@@ -102,16 +110,33 @@ class Game {
     }
     startNight() {
         console.log(`🌙 Starting night`)
+        
+        this.#applyAllEventsAt('onDayEnd')
         this.phase = GamePhases.NIGHT
-        const sortedPlayers = this.getPlayersSortedForNight()
-        for (const player of sortedPlayers) {
-            player.role?.onNightStart?.(this, player)
-        }
+        this.#applyAllEventsAt('onNightStart')
     }
     startDay() {
+        this.#applyAllEventsAt('onNightEnd')
         this.phase = GamePhases.DAY
+        this.#applyAllEventsAt('onDayStart')
+    }
+
+    #applyAllEventsAt(eventName) {
         for (const player of this.playersInRoom) {
-            player.role?.onDayStart?.(this, player)
+            let skipsRoleEvent = false
+            for (const statusEffect of player.statusEffects) {
+                const eventFuncToCall = statusEffect[eventName]
+                if (eventFuncToCall == null) {
+                    continue
+                }
+                skipsRoleEvent = eventFuncToCall(this, player) == false
+                if (skipsRoleEvent) {
+                    break
+                }
+            }
+            if (!skipsRoleEvent) {
+                player.role?.[eventName]?.(this, player)
+            }
         }
     }
 
@@ -129,7 +154,7 @@ class Game {
 
     assignRoles() {
         if (IS_DEBUG) {
-            this.setPlayersAndRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
+            this.setTestPlayersWithRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
             this.playersInRoom[0].role = getRole('Monk')
             this.playersInRoom[1].role = getRole('Imp')
         }
@@ -208,6 +233,13 @@ class Game {
     tryKillPlayer(playerOrName, source) {
         const player = typeof playerOrName === 'string'? this.getPlayer(playerOrName): this.getPlayer(playerOrName.name)
 
+        if (player == null) {
+            console.error(`\nERROR: Player ${playerOrName} not found to kill!`)
+        }
+        if (player.role == null) {
+            console.error(`\nERROR: Player ${playerOrName} has no role!`)
+        }
+
         const playerStatusEffects = [...player.statusEffects]
 
         for (const statusEffect of playerStatusEffects) {
@@ -219,7 +251,7 @@ class Game {
             }
         }
 
-        if (player.role.onDeath != null) {
+        if (player?.role?.onDeath != null) {
             const result = player.role.onDeath(source)
             if (result == false) {
                 return
@@ -275,6 +307,22 @@ class Game {
     setRoles(arr) {
         for (let i = 0; i < arr.length; i++) {
             this.playersInRoom[i].role = getRole(arr[i])
+        }
+    }
+    setTestPlayersWithRoles(arr) {
+        for (let i = 0; i < arr.length; i++) {
+            const playerName = 'TestPlayer' + i
+            const playerIndex = this.playersInRoom.findIndex(p => p.name == playerName)
+            const playerTemplate = { src: '/images/role-thumbnails/Alchemist.webp', name: playerName }
+            if (playerIndex == -1) {
+                addPlayerToGameST(playerTemplate, this.roomCode)
+            } else {
+                this.playersInRoom[playerIndex] = new Player(playerTemplate)
+            }
+
+            console.log(`Getting player ${playerName}`)
+            const player = this.getPlayer(playerName)
+            player.role = getRole(arr[i])
         }
     }
     setPlayersAndRoles(arr) {

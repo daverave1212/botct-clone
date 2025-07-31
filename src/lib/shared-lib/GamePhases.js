@@ -21,7 +21,9 @@ export const TimerDurations = {
 
 export const StatusEffectDuration = {
     PERMANENT: 'permanent',
+
     UNTIL_MORNING: 'until-morning',
+    UNTIL_DUSK: 'until-dusk',           // Immediately before UNTIL_NIGHT
     UNTIL_NIGHT: 'until-night'
 }
 
