@@ -17,7 +17,8 @@ export async function fetchGame(method, url, data) {
             "name": get(me).name,
             "src": get(me).src,
             "privateKey": get(me).privateKey,
-        }
+        },
+        body: data == null? null: JSON.stringify(data)
     })
     
     const responseObject = await response.json()

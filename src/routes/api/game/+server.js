@@ -3,11 +3,14 @@ import { getRequestUser, response } from "../../../lib/server/utils"
 
 
 export async function POST({ request, url, params }) {
+    const data = await request.json()
 
     const player = getRequestUser(request)
 
     const game = createNewGame(player)
     addPlayerToGameST(player, game.roomCode)
+
+    game.scriptRoleNames = data.scriptRoleNames
 
     return response({
         roomCode: game.roomCode,

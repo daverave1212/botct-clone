@@ -6,8 +6,10 @@
 </style>
 
 <script>
-	import { phase, playersInRoom, roomCode } from '../../../stores/online/local/room.js';
+	import { phase, playersInRoom, roomCode, scriptRoleNames } from '../../../stores/online/local/room.js';
     import { GamePhases, ActionDurations, ActionTypes } from '$lib/shared-lib/GamePhases.js'
+    import { browser } from '$app/environment'
+    import { afterNavigate } from '$app/navigation'
 
     import Contact from "../../../components/Contact/Contact.svelte";
     import ContactList from "../../../components/ContactList.svelte";
@@ -33,6 +35,8 @@
     import { me } from '../../../stores/online/local/me.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
 
+    let gameOwnerName = null
+
     let countdownStart = null
     let countdownDuration = null
     let nSecondsRemaining = null
@@ -54,25 +58,24 @@
         let game
         try {
             game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+            console.log({game})
         } catch (e) {
             _nFetchRetries += 1
             console.error(e)
             return
         }
 
+        gameOwnerName = game.ownerName
         $playersInRoom = game.playersInRoom
         $phase = game.phase
+        $scriptRoleNames = game.scriptRoleNames
 
         const newMe = game?.playersInRoom?.find(p => p.name == $me.name)
         if (newMe) {
             $me = newMe
-            console.log(`New Me!!!`)
-            console.log({newMe})
         }
 
         if (game.countdownStart != null) {
-            console.log(`Starting countdown:`)
-            console.log({game})
             countdownStart = game.countdownStart
             countdownDuration = game.countdownDuration
         } else {
@@ -97,6 +100,7 @@
 
     let refreshIntervalId
     let countdownIntervalId
+    
     onMount(() => {
         refresh()
         refreshIntervalId = setInterval(async () => {
@@ -336,18 +340,23 @@
     }
 >
     {#if $me.info != null}
-        <div class="center-content flex-column gap-1 margin-top-4">
+        <div class="center-content flex-column margin-top-2">
             <div>
                 {#if $me.info.roles != null}
                     {#each $me.info.roles as roleName (roleName)}
-                        <div class="center-content flex-column gap-1">
+                        <div class="center-content flex-column margin-top-1">
                             <div>
                                 <RoundCardPortrait role={{...getRole(roleName), isBig: true, isValid: true}}/>
                             </div>
                             <div>
-                                <h2 class="margin-top-2">
+                                <h2 class="margin-top-half center-text">
                                     {@html roleName}
                                 </h2>
+                                {#if $me.info.showsRoleDescriptions}
+                                    <p class="margin-top-half center-text padding-1">
+                                        {@html getRole(roleName)?.effect}
+                                    </p>
+                                {/if}
                             </div>
                         </div>
                     {/each}
@@ -448,9 +457,9 @@
                     </div>
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
-                    <button class="btn red" on:click={() => {
+                    <button class="btn blue" on:click={() => {
                         isMyInfoDrawerOpen = true
-                    }}>See Power</button>
+                    }}>Secret Info</button>
                 {/if}
                 {#if $me.availableAction != null && $me.name == player.name}
                     <button class="btn red" on:click={onUsePowerClick}>Use Power</button>
@@ -464,13 +473,17 @@
 
         {/each}
 
-        <button class="btn blue" on:click={startGame} style="position: relative;">
-            Start Game
-        </button>
+        {#if $me.name == gameOwnerName}
+            <button class="btn blue" on:click={startGame} style="position: relative;">
+                Start Game
+            </button>
+        {/if}
 
-        <div class="center-text shadowed rounded bg-white" style="padding: 1rem; border: solid #EEE 1px;">
-            <h1>{$roomCode}</h1>
-        </div>
+        {#if $roomCode != null}
+            <div class="center-text shadowed rounded bg-white" style="padding: 1rem; border: solid #EEE 1px;">
+                <h1>{$roomCode}</h1>
+            </div>
+        {/if}
 
 
         <h3 class="center-text margin-top-1">To restart the game, open the menu and hit Play. All players are saved.</h3>

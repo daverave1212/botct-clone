@@ -1,4 +1,6 @@
 
+
+Remove the hardcoded script in play-online onCreate 
 Make all kills at night delayed
 Implement action at night for characters
 Refactor intervals on the server to just setTimeout
