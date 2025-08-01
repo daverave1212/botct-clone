@@ -39,6 +39,9 @@ export function popArrayElementAt(arr, index) {
 }
 export function popArrayElementFind(arr, findFunc) {
     const index = arr.findIndex(findFunc)
+    if (index == -1) {
+        return null
+    }
     const elem = arr[index]
     arr.splice(index, 1)
     return elem

@@ -109,6 +109,9 @@
 .padding-1 {
     padding: 1rem;
 }
+.padding-2 {
+    padding: 2rem;
+}
 .padding-half {
     padding: 0.5rem;
 }
@@ -134,10 +137,10 @@
     background-color: gray !important;
 }
 .btn.red {
-    background-color: rgb(250, 52, 52);
+    background-color: var(--red-color);
 }
 .btn.blue {
-    background-color: rgb(52, 138, 250);
+    background-color: var(--blue-color);
 }
 .btn.gray {
     background-color: gray;
@@ -153,7 +156,7 @@
     color: white;
 }
 :root {
-    --menu-selected-color: rgb(180, 0, 111);
+    --menu-selected-color: var(--colorful-color);
 }
 .colorful {
     background-color: var(--menu-selected-color) !important;
@@ -161,6 +164,11 @@
 
 .strikethrough {
     text-decoration: line-through;
+}
+.prevent-select, .unselectable {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 
@@ -207,4 +215,22 @@
 }
 .card p {
     font-size: 0.8rem;
+}
+
+.glow-blink {
+    --blink-color: var(--red-color);
+    box-shadow: 0 0 2px var(--blink-color);
+    animation: glowBlink 1.5s linear infinite;
+}
+
+@keyframes glowBlink {
+    0% {
+        box-shadow: 0 0 2px var(--blink-color);
+    }
+    50% {
+        box-shadow: 0 0 10px var(--blink-color), 0 0 10px var(--blink-color);
+    }
+    100% {
+        box-shadow: 0 0 2px var(--blink-color);
+    }
 }

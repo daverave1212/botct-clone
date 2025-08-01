@@ -59,7 +59,7 @@
 </style>
 
 <script>
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, onMount } from "svelte";
 
 
     export let isOpen
@@ -77,6 +77,12 @@
             }, 500)
         }
     }
+
+    onMount(() => {
+        if (isOpen) {
+            state = 'OPEN'
+        }
+    })
 
     $: sideMenuWrapperClass =
         state == 'OPEN' ? 'side-menu-wrapper side-menu-wrapper--open' :

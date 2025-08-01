@@ -49,17 +49,22 @@
 
     async function onCreate() {
         $scriptRoleNames = [    // TODO: Remove this and replace it
-            'Fool',
-            'Monk',
-            'Mutant',
-            'Soldier',
-            'Mathematician',
-            'Librarian',
             'Investigator',
-            'Imp',
-            'Spy',
-            'Baron',
-            'Poisoner'
+            'Librarian',
+            'Grandmother',
+            'Clockmaker',
+            'Empath',
+            'Dreamer',
+            'Monk',
+            'Undertaker',
+            'Fool',
+            'Soldier',
+
+            'Drunk',
+            'Moonchild',
+            'Mutant',
+
+            'Imp'
         ]
 
         const response = await fetchGame('POST', '/api/game', { scriptRoleNames: $scriptRoleNames })

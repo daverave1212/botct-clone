@@ -1,6 +1,5 @@
-import { findGameAndPlayerST } from "../../../../../../../lib/server/games";
-import { getRequestUser, response } from "../../../../../../../lib/server/utils";
-
+import { findGameAndPlayerST } from "../../../../../../../../lib/server/games";
+import { getRequestUser, response } from "../../../../../../../../lib/server/utils";
 
 export async function POST({ request, params }) {
     const { game, player, statusCode } = findGameAndPlayerST(params)
@@ -8,9 +7,9 @@ export async function POST({ request, params }) {
         return response(null, statusCode)
     }
     const user = getRequestUser(request)
-    const userPlayer = game.getPlayer(user.name)
+    const actionData = params.actionData
 
-    const sc = game.doPlayerActionST(userPlayer, player)
+    const sc = game.onPlayerActionST(user, player, actionData)
 
     return response(null, sc)
 }

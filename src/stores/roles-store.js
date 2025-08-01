@@ -1,19 +1,10 @@
 import { browser } from '$app/environment'
 import { get, writable } from 'svelte/store'
-import { COMPLETE, getNightlyRolePriority, getNormalRolePriority, getRole, getRolesByDifficulty, getSetupRolePriority, getSortRolesWithPriorityFunction, setupRoles } from '../lib/Database'
+import { COMPLETE, getNightlyRolePriority, getNormalRolePriority, getRole, getRolesByDifficulty, getSetupRolePriority, getSortRolesWithPriorityFunction } from '../lib/Database'
 import { getLocalStorageObject, localStorageWritable } from '../lib/svelteUtils'
 
 export const rolesDistribution = localStorageWritable('rolesDistribution', [])
 
-export function autochooseRoles(nPlayers, difficulty) {
-    const allAvailableRoles = getRolesByDifficulty(difficulty)
-    console.log({allAvailableRoles})
-    const isRoleInGame = role => rolesInGame.find(roleInGame => roleInGame.name == role.name) != null
-    let rolesInGame = setupRoles(nPlayers, difficulty).map(role => ({...role, isInGame: true}))
-        rolesInGame = getSortRolesWithPriorityFunction(rolesInGame, getNormalRolePriority)
-    let rolesNotInGame = allAvailableRoles.filter(role => isRoleInGame(role) == false).map(role => ({...role, isInGame: false}))
-    rolesDistribution.set([...rolesInGame, ...rolesNotInGame])
-}
 export function setupCustomDifficultyRoles() {
     const allAvailableRoles = getRolesByDifficulty(COMPLETE)
     const paddedRoles = [...allAvailableRoles,

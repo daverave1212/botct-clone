@@ -8,7 +8,7 @@
     import RoleCard from "../../components/RoleCard.svelte";
     import RoleList from "../../components/RoleList.svelte";
     import RoleListWithRoles from "../../components/RoleListWithRoles.svelte";
-    import { ADVANCED, BAD_MOON_RISING, COMPLETE, difficultyDescriptions, difficultyNames, EVIL, evilsByPlayers, getAllRoleDifficulties, getNormalRolePriority, getRoles, getRolesByDifficulty, getRolesForDifficulty, getSortRolesWithPriorityFunction, INTERMEDIATE, NEGATIVE, STRIGOY, WEREWOLVES } from "../../lib/Database";
+    import { ADVANCED, BAD_MOON_RISING, COMPLETE, difficultyDescriptions, difficultyNames, EVIL, evilsByPlayers, getAllRoleDifficulties, getNormalRolePriority, getRoles, getRolesByDifficulty, getRolesForDifficulty, getSortRolesWithPriorityFunction, INTERMEDIATE, NEGATIVE, STRIGOY, EVILS } from "../../lib/Database";
     import { getMods } from "../../lib/ModsDatabase";
     import { selectedRoles } from '../../stores/selected-roles-store'
     import { goto } from '$app/navigation'

@@ -24,7 +24,7 @@ export async function fetchGame(method, url, data) {
     const responseObject = await response.json()
 
     if (response.status != 200) {
-        goto(`/error?statusCode=${response.status}&message=Unabble to ${method} resource ${url}`)
+        // goto(`/error?statusCode=${response.status}&message=Unabble to ${method} resource ${url}`)
         return { status: response.status }
     }
 
