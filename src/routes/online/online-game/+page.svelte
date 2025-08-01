@@ -46,6 +46,8 @@
     let isMyInfoDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
 
+    let winner = null
+
     let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
     async function refresh() {
         function isRetryLimitExceeded() { return _nFetchRetries >= 3}
@@ -359,6 +361,17 @@
         </div>
     </div>
 </Modal>
+
+<DrawerPage
+    isOpen={winner != null}
+    zIndex="488 !important",
+    on:click={() => {}}
+>
+    <div class="margin-top-4 center-text center-content gap-1">
+        <h1>Game Over</h1>
+        <h2 style="{winner.toLowerCase().startsWith('e')? 'red': 'blue'}">{winner} Win!</h2>
+    </div>
+</DrawerPage>
 
 <DrawerPage
     isOpen={isActionChoosePlayerDrawerOpen}

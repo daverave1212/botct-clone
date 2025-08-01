@@ -97,6 +97,8 @@ class Game {
 
     killHistory
 
+    winner
+
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
