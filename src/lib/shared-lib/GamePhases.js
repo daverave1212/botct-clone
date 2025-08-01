@@ -7,7 +7,8 @@ export const GamePhases = {
 }
 
 export const ActionTypes = {
-    CHOOSE_PLAYER: 'choose-player'
+    CHOOSE_PLAYER: 'choose-player',
+    JUST_CLICK: 'just-click'
 }
 export const ActionDurations = {
     UNTIL_USED: 'until-used',

@@ -7,6 +7,10 @@ const userWithChoosePlayerAction = (user, params) =>
     getGame(user?.roomCode)?.
     getPlayer(user?.name)?.
     availableAction?.type == ActionTypes.CHOOSE_PLAYER
+const meWithAction = (user, params) => {
+    const me = getGame(user?.roomCode)?.getPlayer(user?.name)
+    return (me?.name == user.name && me?.availableAction?.type == ActionTypes.JUST_CLICK)
+}
 
 const rules = {
     'default': {
@@ -29,10 +33,12 @@ const rules = {
                     '*': {
                         DELETE: roomAdmin,
 
+                        'action': {
+                            POST: meWithAction,
+                        },
                         'choose': {
                             POST: userWithChoosePlayerAction
                         },
-
                         'dead': {
                             POST: roomAdmin
                         }

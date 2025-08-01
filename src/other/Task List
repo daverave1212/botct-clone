@@ -1,4 +1,21 @@
 
 
 Remove the hardcoded script in play-online onCreate 
-Fix debug-only testing functionalities on server
+Remove debug-only testing functionalities on server
+
+
+Roles Implemented:
+- Imp
+
+- Moonchild
+- Mutant
+
+- Investigator
+- Librarian
+- Washerwoman
+- Grandmother
+- Soldier
+- Fool
+- Monk
+- Undertaker
+- Empath

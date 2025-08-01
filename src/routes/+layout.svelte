@@ -2,6 +2,7 @@
     import { SaraProvider } from "saraui";
     import "../app.css";
     import '../utils.css'
+    import '../app-color-vars.css'
     import '../card-png.css'
     import { navigating } from '$app/stores'
     import Nav from "../components-standalone/Nav.svelte";
@@ -9,6 +10,7 @@
     import { fly } from "svelte/transition";
     import { onMount } from "svelte";
     import { addedPlayers } from "../stores/added-players-store";
+    import Toaster from "../components-standalone/Toaster.svelte";
 
     let isBurgerOpen = false
 

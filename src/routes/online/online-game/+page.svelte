@@ -35,6 +35,8 @@
     import { me } from '../../../stores/online/local/me.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
     import { swapElementsAt } from '../../../lib/utils.js';
+    import Toaster from '../../../components-standalone/Toaster.svelte';
+
 
     let gameOwnerName = null
 
@@ -46,12 +48,31 @@
     let isMyInfoDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
 
+    let winner = null
+
     let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
+
+    $: didEvilsWin = winner != null && winner.toLowerCase().startsWith('evil')
+    $: didTownsfolkWin = winner != null && !didEvilsWin
+
+    let showToaster = () => {}
+
+    
+
+    async function fetchOnlineGame(method, url, data) {
+        const result = await fetchGame(method, url, data)
+        if (result.status != 200) {
+            console.log({result})
+            console.error(`Error ${result.status}: Failed to ${method} resource ${url}`)
+            showToaster('error', `Error ${result.status}: Failed to ${method} resource ${url}`)
+        }
+        return result
+    }
     async function refresh() {
         function isRetryLimitExceeded() { return _nFetchRetries >= 3}
         async function fetchThisGame() {
             try {
-                const game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+                const game = await fetchOnlineGame('GET', `/api/game/${get(roomCode)}`)
                 console.log({game})
                 return game
             } catch (e) {
@@ -108,6 +129,11 @@
             closeAllDrawers()
         }
 
+        if (game.winner != null) {
+            console.log(`☑️ Winner not null! Setting winner to: ${game.winner}`)
+            winner = game.winner
+        }
+
         gameOwnerName = game.ownerName
         $playersInRoom = game.playersInRoom
         $phase = game.phase
@@ -123,7 +149,6 @@
 
         
     }
-
     async function maybeTickCountdown() {
         if (countdownStart == null) {
             return
@@ -162,7 +187,9 @@
         $hasSortTooltip
     $: backgroundColor = $phase == 'night'? '#18172e': 'white'
 
-    
+    $: if (winner) {
+        console.log(`❌ winner changed to ${winner}`)
+    }
 
     const statusEffects = [
         'Protected',
@@ -290,35 +317,35 @@
 
     async function startGame() {
         const rc = $roomCode
-        await fetchGame('POST', `/api/game/${rc}/start`)
+        await fetchOnlineGame('POST', `/api/game/${rc}/start`)
         await refresh()
     }
 
     async function endDay() {
-        await fetchGame('POST', `/api/game/${$roomCode}/end-day`)
+        await fetchOnlineGame('POST', `/api/game/${$roomCode}/end-day`)
         await refresh()
     }
 
     async function kickPlayer(name) {
         const rc = $roomCode
-        await fetchGame('DELETE', `/api/game/${rc}/player/${name}`)
+        await fetchOnlineGame('DELETE', `/api/game/${rc}/player/${name}`)
         await refresh()
     }
 
     async function killPlayer(name) {
         console.log('Killing player')
         const rc = $roomCode
-        // await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
-        await fetchGame('POST', `/api/game/${rc}/player/${name}/dead`)
+        // await fetchOnlineGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
+        await fetchOnlineGame('POST', `/api/game/${rc}/player/${name}/dead`)
         await refresh()
     }
     async function movePlayer(name, upOrDown) {
-        await fetchGame('POST', `/api/game/${rc}/player/${name}/move/${upOrDown}`)
+        await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${name}/move/${upOrDown}`)
         const playerI = $playersInRoom.findIndex(p => p.name == name)
         const otherPlayerI = upOrDown == 'up'? playerI - 1: (playerI + 1)
-        const newPlayerInRoom = [...$playersInRoom]
-        swapElementsAt(newPlayerInRoom)
-        $playersInRoom = newPlayerInRoom
+        const newPlayersInRoom = [...$playersInRoom]
+        swapElementsAt(newPlayersInRoom, playerI, otherPlayerI)
+        $playersInRoom = newPlayersInRoom
     }
 
     async function onUsePowerClick() {
@@ -327,25 +354,27 @@
         if (myPower == null) {
             return
         }
+        $me = {...$me, availableAction: null}
         switch (myPower.type) {
             case ActionTypes.CHOOSE_PLAYER:
                 isActionChoosePlayerDrawerOpen = true
                 return
+            case ActionTypes.JUST_CLICK:
+                action()
         }
     }
 
     async function actionChoosePlayer(playerName) {
-        const shouldHideAction =
-            $me.availableAction?.clientDuration == ActionDurations.UNTIL_USED ||
-            $me.availableAction?.clientDuration == ActionDurations.UNTIL_USED_OR_DAY
-        if (shouldHideAction) {
-            $me = {...$me, availableAction: null}
-        }
-        await fetchGame('POST', `/api/game/${$roomCode}/player/${playerName}/choose`)
+        await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${$me.name}/action/${playerName}`)
         await refresh()
+    }
+    async function action() {
+        await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${$me.name}/action/${me.name}`)
     }
 
 </script>
+
+<Toaster setShowToaster={func => showToaster = func}/>
 
 <Modal isOpen={isModalOpen} setIsOpen={bool => isModalOpen = bool}>
     <div class="center-content padding-2">
@@ -359,6 +388,31 @@
         </div>
     </div>
 </Modal>
+
+<DrawerPage
+    isOpen={winner != null}
+    zIndex="488 !important",
+    on:click={() => {}}
+>
+    <div class="margin-top-4 padding-2 center-text">
+        {#if didEvilsWin}
+            {#if $me.role?.isEvil}
+                <h1>Town Subdued!</h1>
+            {:else}
+                <h1>Game Over</h1>
+            {/if}
+            <h2 class="margin-top-2" style="color: red;">Evils win!</h2>
+        {/if}
+        {#if didTownsfolkWin}
+            {#if $me.role?.isEvil}
+                <h1>Game Over</h1>
+            {:else}
+                <h1>Demon killed!</h1>
+            {/if}
+            <h2 class="margin-top-2" style="color: rgb(52, 138, 250);">Townsfolk win!</h2>
+        {/if}
+    </div>
+</DrawerPage>
 
 <DrawerPage
     isOpen={isActionChoosePlayerDrawerOpen}
@@ -522,12 +576,12 @@
                     </div>
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
-                    <button class="btn blue" on:click={() => {
+                    <button class="btn blue glow-blink" style="--blink-color: var(--blue-color)" on:click={() => {
                         isMyInfoDrawerOpen = true
                     }}>Secret Info</button>
                 {/if}
                 {#if $me.availableAction != null && $me.name == player.name}
-                    <button class="btn red" on:click={onUsePowerClick}>Use Power</button>
+                    <button class="btn red glow-blink" on:click={onUsePowerClick}>Use Power</button>
                 {/if}
                 {#if $me.role != null && $me.name == player.name}
                     <button class="btn colorful" on:click={() => {
@@ -552,6 +606,12 @@
                 <h1>{$roomCode}</h1>
             </div>
         {/if}
+
+        <button class="btn colorful" on:click={() => {
+            showToaster('success', 'This is a little error')
+        }} style="position: relative;">
+            Test Toaster
+        </button>
 
 
         <h3 class="center-text margin-top-1">To restart the game, open the menu and hit Play. All players are saved.</h3>

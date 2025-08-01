@@ -268,7 +268,7 @@ export const getRoles = () => {
             },
             actionDuration: 'onNightEnd',
             infoDuration: 'onNightEnd',
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 const chosenPlayerRealRole = chosenPlayer.role?.name
                 const allScriptRoles = game.getScriptRoleObjects()
@@ -294,7 +294,50 @@ export const getRoles = () => {
         {
             "name": "Empath",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Each night, you learn how many of your 2 alive neighbors are evil."
+            "effect": "Each night, you learn how many of your 2 alive neighbors are evil.",
+            infoDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                const neighbors = [game.getPreviousAlivePlayer(me), game.getNextAlivePlayer(me)]
+                if (neighbors[0] == null || neighbors[1] == null) {
+                    return
+                }
+                const evilNeighbors = neighbors.filter(p => p.isEvil())
+                me.info = {
+                    text: `${evilNeighbors.length}`
+                }
+            },
+            test() {
+                const game = makeTestGame()
+                const player = game.getPlayerAt(1)
+                
+                game.reset().setPlayersAndRoles(['Spy', 'Empath', 'Fool', 'Fool', 'Imp'])
+                game.startNight()
+                test(`Near spy and fool`, game.getPlayerAt(1).info.text == `1`)
+
+                game.reset().setPlayersAndRoles(['Soldier', 'Empath', 'Fool', 'Fool', 'Imp'])
+                game.startNight()
+                test(`Near soldier and fool`, game.getPlayerAt(1).info.text == `0`)
+
+                game.reset().setPlayersAndRoles(['Empath', 'Fool', 'Fool', 'Fool', 'Imp'])
+                game.startNight()
+                test(`Is first player`, game.getPlayerAt(0).info.text == `1`)
+
+                game.reset().setPlayersAndRoles(['Empath', 'Poisoner', 'Fool', 'Fool', 'Imp'])
+                game.startNight()
+                test(`Is first player and 2 evils`, game.getPlayerAt(0).info.text == `2`)
+
+                game.reset().setPlayersAndRoles(['Spy', 'Poisoner', 'Fool', 'Fool', 'Empath'])
+                game.startNight()
+                test(`Is last player and 1 evil`, game.getPlayerAt(4).info.text == `1`)
+
+                game.reset().setPlayersAndRoles(['Spy', 'Poisoner', 'Fool', 'Imp', 'Empath'])
+                game.startNight()
+                test(`Is last player and 2 evils`, game.getPlayerAt(4).info.text == `2`)
+
+                game.reset().setPlayersAndRoles(['Soldier', 'Poisoner', 'Imp', 'Fool', 'Empath'])
+                game.startNight()
+                test(`Is last player and 0 evils`, game.getPlayerAt(4).info.text == `0`)
+            }
         },
         {
             "name": "Engineer",
@@ -359,11 +402,10 @@ export const getRoles = () => {
             "difficulty": BAD_MOON_RISING,
             "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
             onSetup: function(game, player) {
-                console.log(`Doing on setup for grandmother`)
                 const townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
                 if (townsfolks.length == 0) {
                     player.info = {
-                        text: 'No other player found. Nobody is your grandson'
+                        text: 'You do not have a grandson.'
                     }
                     return
                 }
@@ -383,15 +425,13 @@ export const getRoles = () => {
             },
             test() {
                 const game = makeTestGame()
-                game.setPlayersAndRoles(['Grandmother', 'Fool', 'Fool', 'Fool', 'Imp', 'Fool', 'Fool'])
+                game.setPlayersAndRoles(['Grandmother', 'Washerwoman', 'Undertaker', 'Investigator', 'Imp', 'Monk', 'Ravenkeeper'])
                 game.doRolesSetup()
 
-                const grandsonPlayerI = game.playersInRoom.findIndex(p => p.statusEffects.length != 0)
+                const grandsonPlayerI = game.playersInRoom.findIndex(p => p.statusEffects.find(se => se.name == 'Grandson') != null)
                 const grandsonPlayer = game.getPlayerAt(grandsonPlayerI)
-                // console.log(game.playersInRoom)
-                // console.log({grandsonPlayer, grandsonPlayerI})
 
-                game.tryKillPlayer(grandsonPlayer.name, { source: SourceOfDeathTypes.DEMON_KILL })
+                game.tryKillPlayer(grandsonPlayer.name, { type: SourceOfDeathTypes.DEMON_KILL })
 
                 test(`Grandma player is dead`, game.getPlayerAt(0).isDead)
             }
@@ -524,7 +564,7 @@ export const getRoles = () => {
                 const me = game.getPlayer(player?.name || player)
                 me.availableAction = null
             },
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 if (me?.availableAction == null) {  // Prevent multiple requests
                     return
                 }
@@ -690,7 +730,28 @@ export const getRoles = () => {
         {
             "name": "Washerwoman",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing that 1 of 2 players is a particular Townsfolk."
+            "effect": "You start knowing that 1 of 2 players is a particular Townsfolk.",
+            onSetup: function(game, player) {
+                const randomTF = randomOf(...game.getNonOutsiderTownsfolk().filter(p => p.name != player.name))
+
+                if (randomTF == null) {
+                    player.info = { text: 'There are no townsfolk in this game.' }
+                    return
+                }
+
+                const randomPlayer = randomOf(...game.getPlayersExcept([player.name, randomTF.name]))
+                if (randomPlayer == null) {
+                    player.info = null
+                    return
+                }
+                
+                const playersDisplayed = randomizeArray([randomTF, randomPlayer])
+
+                player.info = {
+                    roles: [randomTF.role.name],
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
+                }
+            }
         },
         {
             "name": "Barber",
@@ -779,16 +840,41 @@ export const getRoles = () => {
             "effect": "When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.",
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
-            isOutsider: true
+            isOutsider: true,
+            actionDuration: 'onDayStart',
+            onDeath(source, me) {
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+                return true
+            },
+            onPlayerAction(game, me, actionData) {
+                const chosenPlayer = game.getPlayer(actionData)
+                if (chosenPlayer.isDead) {
+                    return
+                }
+                if (!chosenPlayer.isEvil()) {
+                    game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+                }
+            }
         },
         {
             "name": "Mutant",
             "difficulty": SECTS_AND_VIOLETS,
-            "effect": "If you ever claim to be or insinuate you are an (or any) Outsider, you die.",
-            "notes": "If you are mad about being an Outsider, you might be executed.",
+            "effect": "You must never claim or insinuate you're a Mutant or an Outsider. If you do, use your power to kill yourself.",
+            "notes": "Be fair, don't cheat. If anyone asks, you can say you don't want to say your role or pretend you're a different one.",
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
-            isOutsider: true
+            isOutsider: true,
+            actionDuration: null,   // Never expire
+            onSetup(game, me) {
+                me.availableAction = {
+                    type: ActionTypes.JUST_CLICK
+                }
+            },
+            onPlayerAction(game, me, data) {
+                game.tryKillPlayer(me, { type: SourceOfDeathTypes.OTHER })
+            }
         },
         {
             "name": "Ogre",
@@ -1101,11 +1187,9 @@ export const getRoles = () => {
             isEvil: true,
             infoDuration: 'onNightEnd',
             onSetup(game, player) {
-                console.log(`😈 Imp setup`)
                 const townsfolkNotInGame = game.getRolesNotInGame()
                     .filter(r => !r.isEvil)
                     .map(r => r.name)
-                console.log(townsfolkNotInGame)
                 player.info = {
                     roles: townsfolkNotInGame,
                     showsRoleDescriptions: true,
@@ -1120,7 +1204,7 @@ export const getRoles = () => {
                 }
             },
             actionDuration: 'onNightEnd',
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 if (game.phase != GamePhases.NIGHT) {   // Prevent multiple requests
                     return
                 }
