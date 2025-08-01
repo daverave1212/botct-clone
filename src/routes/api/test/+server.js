@@ -7,7 +7,7 @@ export async function GET(evt) {
     const allRoles = getRoles()
     for (const role of allRoles) {
         if (role.test != null) {
-            console.log(`> Running tests for ${role.name}`)
+            console.log(`🆗 Running tests for ${role.name}`)
             role.test()
             console.log('')
         }

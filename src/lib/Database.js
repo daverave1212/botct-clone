@@ -269,7 +269,7 @@ export const getRoles = () => {
             },
             actionDuration: 'onNightEnd',
             infoDuration: 'onNightEnd',
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 const chosenPlayerRealRole = chosenPlayer.role?.name
                 const allScriptRoles = game.getScriptRoleObjects()
@@ -517,7 +517,7 @@ export const getRoles = () => {
                 const me = game.getPlayer(player?.name || player)
                 me.availableAction = null
             },
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 if (me?.availableAction == null) {  // Prevent multiple requests
                     return
                 }
@@ -1091,7 +1091,7 @@ export const getRoles = () => {
                 }
             },
             actionDuration: 'onNightEnd',
-            doPlayerAction(game, me, actionData) {
+            onPlayerAction(game, me, actionData) {
                 if (game.phase != GamePhases.NIGHT) {   // Prevent multiple requests
                     return
                 }
