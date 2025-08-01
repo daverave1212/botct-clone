@@ -8,7 +8,7 @@ export async function POST({ request, url, params }) {
     const player = getRequestUser(request)
 
     const game = createNewGame(player)
-    addPlayerToGameST(player, game.roomCode)
+    addPlayerToGameST({...player, privateKey: game.privateKey}, game.roomCode)
 
     game.scriptRoleNames = data.scriptRoleNames
 

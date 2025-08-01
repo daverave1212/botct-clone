@@ -1,7 +1,7 @@
 import { ActionTypes, ActionDurations, GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 import { roomCode } from "../../stores/online/local/room"
 import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
-import { createRandomCode, randomizeArray } from "./utils"
+import { createRandomCode, randomizeArray, swapElementsAt } from "./utils"
 
 
 const IS_DEBUG = true
@@ -10,7 +10,7 @@ const IS_DEBUG = true
 function generateRandomRoomCode() {
     let randomRoomCode
     do {
-        randomRoomCode = createRandomCode(3)
+        randomRoomCode = createRandomCode(1)
     } while (randomRoomCode in games)
     return randomRoomCode
 }
@@ -18,7 +18,7 @@ function generateRandomRoomCode() {
 
 const SOURCE_OF_DEATH_TEMPLATE = {
     type: SourceOfDeathTypes.DEMON_KILL,
-    player: null
+    playerName: null
 }
 
 const INFO_TEMPLATE = {
@@ -51,10 +51,10 @@ const PLAYER_DEFAULT = {
     statusEffects: []
 }
 class Player {
-    constructor({ name, src }) {
+    constructor({ name, src, privateKey }) {
         this.name = name
         this.src = src
-        this.privateKey = null
+        this.privateKey = privateKey
 
         this.role = null
         this.isDrunk = false
@@ -95,6 +95,8 @@ class Game {
     countdownStart
     countdownDuration
 
+    killHistory
+
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
@@ -103,22 +105,26 @@ class Game {
 
         this.playersInRoom = []
         this.phase = GamePhases.NOT_STARTED
+
+        this.killHistory = []
     }
 
     goToNightThenDayAsync() {
         this.startNight()
-        this.doAfterCountdown(20000, () => {
+        this.doAfterCountdown(5000, () => {
             this.startDay()
         })
     }
     startNight() {
         console.log(`🌙 Starting night`)
-        
         this.#applyAllEventsAt('onDayEnd')
         this.phase = GamePhases.NIGHT
         this.#applyAllEventsAt('onNightStart')
     }
     startDay() {
+        for (const player of this.playersInRoom) {
+            player.info = null
+        }
         this.#applyAllEventsAt('onNightEnd')
         this.phase = GamePhases.DAY
         this.#applyAllEventsAt('onDayStart')
@@ -126,6 +132,14 @@ class Game {
 
     #applyAllEventsAt(eventName) {
         for (const player of this.playersInRoom) {
+
+            if (player.role.actionDuration == eventName) {
+                player.availableAction = null
+            }
+            if (player.role.infoDuration == eventName) {
+                player.info = null
+            }
+
             let skipsRoleEvent = false
             for (const statusEffect of player.statusEffects) {
                 const eventFuncToCall = statusEffect[eventName]
@@ -158,7 +172,7 @@ class Game {
     assignRoles() {
         if (IS_DEBUG) {
             this.setTestPlayersWithRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
-            this.playersInRoom[0].role = getRole('Monk')
+            this.playersInRoom[0].role = getRole('Soldier')
             this.playersInRoom[1].role = getRole('Imp')
         }
     }
@@ -167,7 +181,7 @@ class Game {
         this.#applyAllEventsAt('onSetup')
     }
 
-
+    getScriptRoleObjects() { return this.scriptRoleNames.map(rn => getRole(rn)) }
     getPlayers() { return this.playersInRoom }
     getPlayersExcept(nameOrNames) { 
         const names = Array.isArray(nameOrNames)? nameOrNames: [nameOrNames]
@@ -177,8 +191,15 @@ class Game {
         return this.playersInRoom[i]
     }
 
-    getPlayer(name) {
-        return this.playersInRoom.find(p => p.name == name)
+    getPlayer(nameOrPlayer) {
+        console.log(`Received ${nameOrPlayer}`)
+        if (nameOrPlayer == null) {
+            console.warn('⚠️ getPlayer given null parameter.')
+            return null
+        }
+        const playerName = (typeof nameOrPlayer === 'string')? nameOrPlayer: nameOrPlayer.name
+        console.log(`playerName: ${playerName}; typeof nameOrPlayer ${typeof nameOrPlayer}`)
+        return this.playersInRoom.find(p => p.name == playerName)
     }
 
     addPlayer(player) {
@@ -204,14 +225,26 @@ class Game {
             !p.role.isDemon
         ))
     }
+    getAliveMinions() { return this.getMinions().filter(p => !p.isDead)}
     getTownsfolk() {
         return randomizeArray(this.playersInRoom.filter(p => !p.role.isEvil))
     }
+    getAliveTownsfolk() { return this.getTownsfolk().filter(p => !p.isDead)}
     getOutsiders() {
         return randomizeArray(this.playersInRoom.filter(p => p.role.isOutsider || p.isDrunk))
     }
+    getAliveOutsiders() { return this.getOutsiders().filter(p => !p.isDead)}
     getDemon() {
         return this.playersInRoom.find(p => p.isDemon)
+    }
+    getLastExecutedPlayer() {
+        for (let i = this.killHistory.length - 1; i >= 0; i--) {
+            const { playerName, source } = this.killHistory[i]
+            if (source.type == SourceOfDeathTypes.EXECUTION) {
+                return this.getPlayer(playerName)
+            }
+        }
+        return null
     }
     getNextPlayer(player) {
         const i = this.playersInRoom.findIndex(p => p.name == player.name)
@@ -258,7 +291,7 @@ class Game {
 
         for (const statusEffect of playerStatusEffects) {
             if (statusEffect.onDeath != null) {
-                const result = statusEffect.onDeath(source)
+                const result = statusEffect.onDeath(source, player)
                 if (result == false) {
                     return
                 }
@@ -266,13 +299,46 @@ class Game {
         }
 
         if (player?.role?.onDeath != null) {
-            const result = player.role.onDeath(source)
+            const result = player.role.onDeath(source, player)
             if (result == false) {
                 return
             }
         }
 
         player.isDead = true
+        this.killHistory.push({
+            playerName: player.name,
+            source
+        })
+    }
+    movePlayerUp(playerOrName) {
+        const player = this.getPlayer(playerOrName)
+        const playerI = this.playersInRoom.findIndex(p => p.name == player.name)
+
+        if (playerI == 0) {
+            return
+        }
+
+        this.playersInRoom[playerI] = this.playersInRoom[playerI - 1]
+        this.playersInRoom[playerI - 1] = player
+    }
+    movePlayerUpOrDown(playerOrName, upOrDown) {
+        const player = this.getPlayer(playerOrName)
+        const playerI = this.playersInRoom.findIndex(p => p.name == player.name)
+        const otherPlayerI = upOrDown == 'up'? playerI - 1: (playerI + 1)
+        swapElementsAt(this.playersInRoom, playerI, otherPlayerI)
+    }
+
+    movePlayerDown(playerOrName) {
+        const player = this.getPlayer(playerOrName)
+        const playerI = this.playersInRoom.findIndex(p => p.name == player.name)
+
+        if (playerI == this.playersInRoom.length - 1) {
+            return
+        }
+
+        this.playersInRoom[playerI] = this.playersInRoom[playerI + 1]
+        this.playersInRoom[playerI + 1] = player
     }
 
     doPlayerActionST(p, actionData) {
@@ -284,7 +350,10 @@ class Game {
         if (actionFunc == null) {
             return 400
         }
-        console.log(`Doing player action...`)
+        if (p.availableAction == null) {    // Prevent multiple requests
+            return 200
+        }
+        player.availableAction = null
         actionFunc(this, player, actionData)
     }
 
@@ -329,15 +398,19 @@ class Game {
     setTestPlayersWithRoles(arr) {
         for (let i = 0; i < arr.length; i++) {
             const playerName = 'TestPlayer' + i
+            console.log(playerName)
             const playerIndex = this.playersInRoom.findIndex(p => p.name == playerName)
+            console.log(playerIndex)
             const playerTemplate = { src: '/images/role-thumbnails/Alchemist.webp', name: playerName }
+            console.log(playerTemplate)
             if (playerIndex == -1) {
-                addPlayerToGameST(playerTemplate, this.roomCode)
+                const result = addPlayerToGameST(playerTemplate, this.roomCode)
+                console.log(`Result: ${result}`)
             } else {
                 this.playersInRoom[playerIndex] = new Player(playerTemplate)
             }
 
-            console.log(`Getting player ${playerName}`)
+            console.log(`Getting player ${playerName} from players ${this.playersInRoom.map(p => p.name).join(', ')}`)
             const player = this.getPlayer(playerName)
             player.role = getRole(arr[i])
         }

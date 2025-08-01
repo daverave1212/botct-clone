@@ -1,5 +1,9 @@
 import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, times } from "./utils"
 import { browser } from '$app/environment'
+import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
+import { GamePhases } from "$lib/shared-lib/GamePhases"
+
+function makeTestGame() {}  // For compatibility
 
 export const WEREWOLVES = 'werewolves'
 export const TOWNSFOLK = 'townsfolk'
@@ -173,7 +177,75 @@ export const getRoles = () => {
         {
             "name": "Clockmaker",
             "difficulty": SECTS_AND_VIOLETS,
-            "effect": "You start knowing how many steps from the Demon to its nearest Minion."
+            "effect": "You start knowing how many steps from the Demon to its nearest Minion.",
+            onSetup: function(game, player) {
+                const demonIndex = game.playersInRoom.findIndex(p => p.role?.isDemon)
+
+                if (demonIndex == -1) {
+                    player.info = { text: 'There is no demon in this game.' }
+                    return
+                }
+
+                if (game.getMinions().length == 0) {
+                    player.info = { text: 'There are no minions in this game.' }
+                    return
+                }
+
+                let answer = 0
+                for (let step = 1; step < game.playersInRoom.length; step++) {
+                    const prevI = (demonIndex - step + game.playersInRoom.length) % game.playersInRoom.length
+                    const nextI = (demonIndex + step + game.playersInRoom.length) % game.playersInRoom.length
+                    const prevPlayer = game.playersInRoom[prevI]
+                    const nextPlayer = game.playersInRoom[nextI]
+                    if (prevPlayer.role?.isEvil && !prevPlayer.role?.isDemon) {
+                        answer = step
+                        break
+                    }
+                    if (nextPlayer.role?.isEvil && !nextPlayer.role?.isDemon) {
+                        answer = step
+                        break
+                    }
+                }
+                player.info = {
+                    text: `<h1>${answer}</h1>`
+                }
+            },
+            test() {
+                const game = makeTestGame()
+                game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp'])
+                const player = game.getPlayerAt(1)
+                
+                this.onSetup(game, player)
+                test(`Spy first, imp last`, player.info?.text == `<h1>1</h1>`)
+
+                game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp', 'Spy'])
+                this.onSetup(game, player)
+                test(`Spy first, imp > spy`, player.info?.text == `<h1>1</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Spy', 'Fool', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp between`, player.info?.text == `<h1>2</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp low`, player.info?.text == `<h1>3</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`Spy first, imp equal`, player.info?.text == `<h1>3</h1>`)
+
+                game.setPlayersAndRoles(['Fool', 'Spy', 'Fool', 'Fool', 'Fool', 'Spy', 'Fool'])
+                this.onSetup(game, player)
+                test(`No imp`, player.info?.text == `There is no demon in this game.`)
+
+                game.setPlayersAndRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
+                this.onSetup(game, player)
+                test(`No minions`, player.info?.text == `There are no minions in this game.`)
+                
+                game.setPlayersAndRoles(['Imp', 'Spy'])
+                this.onSetup(game, player)
+                test(`2 players`, player.info?.text == `<h1>1</h1>`)
+            }
         },
         {
             "name": "Courtier",
@@ -188,7 +260,37 @@ export const getRoles = () => {
         {
             "name": "Dreamer",
             "difficulty": SECTS_AND_VIOLETS,
-            "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct."
+            "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct.",
+            onNightStart(game, me) {
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+            },
+            actionDuration: 'onNightEnd',
+            infoDuration: 'onNightEnd',
+            doPlayerAction(game, me, actionData) {
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                const chosenPlayerRealRole = chosenPlayer.role?.name
+                const allScriptRoles = game.getScriptRoleObjects()
+                const randomOppositeRole =
+                    chosenPlayer.role.isEvil?
+                        randomOf(...(allScriptRoles.filter(r => !r.isEvil)))?.name
+                    :randomOf(...(allScriptRoles.filter(r => r.isEvil)))?.name
+                
+                if (randomOppositeRole == null) {
+                    me.info = {
+                        text: "You dreamed nothing."
+                    }
+                    return
+                }
+
+                const the2roles = randomizeArray([chosenPlayerRealRole, randomOppositeRole])
+                me.info = {
+                    roles: the2roles,
+                    text: `<em>${chosenPlayer.name}</em> is one of these roles.`
+                }
+            }
         },
         {
             "name": "Empath",
@@ -248,7 +350,44 @@ export const getRoles = () => {
         {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
-            "effect": "You start knowing a good player & their character. If the Demon kills them, you die too."
+            "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
+            onSetup: function(game, player) {
+                console.log(`Doing on setup for grandmother`)
+                const townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
+                if (townsfolks.length == 0) {
+                    player.info = {
+                        text: 'No other player found. Nobody is your grandson'
+                    }
+                    return
+                }
+
+                const randomTownsfolk = randomOf(...townsfolks)
+
+                randomTownsfolk.statusEffects.push({
+                    name: 'Grandson',
+                    duration: StatusEffectDuration.PERMANENT,
+                    onDeath(source) {
+                        if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
+                            game.tryKillPlayer(player, { type: SourceOfDeathTypes.OTHER })
+                        }
+                        return true
+                    }
+                })
+            },
+            test() {
+                const game = makeTestGame()
+                game.setPlayersAndRoles(['Grandmother', 'Fool', 'Fool', 'Fool', 'Imp', 'Fool', 'Fool'])
+                game.doRolesSetup()
+
+                const grandsonPlayerI = game.playersInRoom.findIndex(p => p.statusEffects.length != 0)
+                const grandsonPlayer = game.getPlayerAt(grandsonPlayerI)
+                // console.log(game.playersInRoom)
+                // console.log({grandsonPlayer, grandsonPlayerI})
+
+                game.tryKillPlayer(grandsonPlayer.name, { source: SourceOfDeathTypes.DEMON_KILL })
+
+                test(`Grandma player is dead`, game.getPlayerAt(0).isDead)
+            }
         },
         {
             "name": "High Priestess",
@@ -268,7 +407,28 @@ export const getRoles = () => {
         {
             "name": "Investigator",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing that 1 of 2 players is a particular Minion."
+            "effect": "You start knowing that 1 of 2 players is a particular Minion.",
+            onSetup: function(game, player) {
+                const randomMinion = randomOf(...game.getMinions())
+
+                if (randomMinion == null) {
+                    player.info = { text: 'There are no minions in this game.' }
+                    return
+                }
+
+                const randomTownsfolk = randomOf(...game.getPlayersExcept([player.name, randomMinion.name]))
+                if (randomTownsfolk == null) {
+                    player.info = null
+                    return
+                }
+                
+                const playersDisplayed = randomizeArray([randomMinion, randomTownsfolk])
+
+                player.info = {
+                    roles: [randomMinion.role.name],
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
+                }
+            }
         },
         {
             "name": "Juggler",
@@ -288,7 +448,30 @@ export const getRoles = () => {
         {
             "name": "Librarian",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)"
+            "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
+            onSetup: function(game, player) {
+                const randomOutsider = randomOf(...game.getOutsiders())
+
+                if (randomOutsider == null) {
+                    player.info = { text: 'There are no Outsiders in this game.' }
+                    return
+                }
+
+                const randomTownsfolk = randomOf(...game.getPlayersExcept([player.name, randomOutsider.name]))
+                if (randomTownsfolk == null) {
+                    player.info = null
+                    return
+                }
+                
+                const playersDisplayed = randomizeArray([randomOutsider, randomTownsfolk])
+
+                const outsiderName = randomOutsider.isDrunk? 'Drunk': randomOutsider.role.name
+
+                player.info = {
+                    roles: [outsiderName],
+                    text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
+                }
+            }
         },
         {
             "name": "Lycanthrope",
@@ -320,7 +503,39 @@ export const getRoles = () => {
         {
             "name": "Monk",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight."
+            "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight.",
+            onNightStart(game, player) {
+                const me = game.getPlayer(player?.name || player)
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+                console.log(`!!! Did set my available action to: `)
+                console.log(me.availableAction)
+            },
+            onDayStart(game, player) {
+                const me = game.getPlayer(player?.name || player)
+                me.availableAction = null
+            },
+            doPlayerAction(game, me, actionData) {
+                if (me?.availableAction == null) {  // Prevent multiple requests
+                    return
+                }
+                console.log(`Doing plaer action upon ${actionData}`)
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                chosenPlayer.statusEffects.push({
+                    name: 'Protected',
+                    duration: StatusEffectDuration.UNTIL_NIGHT,
+                    onDayStart: () => chosenPlayer.removeStatus('Protected'),
+                    onDeath: source => {
+                        if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
+                            return false
+                        }
+                        return true
+                    }
+                })
+                me.availableAction = null
+            }
         },
         {
             "name": "Nightwatchman",
@@ -454,41 +669,47 @@ export const getRoles = () => {
             "effect": "If you died today or tonight, the Demon may choose 2 players (not another Demon) to swap characters.",
             deathReminder: "The Demon may choose 2 players to swap characters.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Butler",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Damsel",
             "difficulty": EXPERIMENTAL,
             "effect": "All Minions know a Damsel is in play. If a Minion publicly guesses you (once), your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Drunk",
             "difficulty": TROUBLE_BREWING,
             "effect": "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Golem",
             "difficulty": EXPERIMENTAL,
             "effect": "You may only nominate once per game. When you do, if the nominee is not the Demon, they die.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Goon",
             "difficulty": BAD_MOON_RISING,
             "effect": "Each night, the 1st player to choose you with their ability is drunk until dusk. You become their alignment <i>(alternatively, you <b>know</b> their alignment).</i>.",
             ribbonText: "OUTSIDER",
+            isOutsider: true,
             ribbonColor: MORNING_COLOR
         },
         {
@@ -496,35 +717,40 @@ export const getRoles = () => {
             "difficulty": EXPERIMENTAL,
             "effect": "If you died today or tonight, the Minion & Demon players may choose new Minion & Demon characters to be.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Heretic",
             "difficulty": EXPERIMENTAL,
             "effect": "Whoever wins, loses & whoever loses, wins, even if you are dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Klutz",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "When you learn that you died, publicly choose 1 alive player: if they are evil, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Lunatic",
             "difficulty": BAD_MOON_RISING,
             "effect": "You think you are a Demon, but you are not. The Demon knows who you are & who you choose at night.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Moonchild",
             "difficulty": BAD_MOON_RISING,
             "effect": "When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Mutant",
@@ -532,77 +758,88 @@ export const getRoles = () => {
             "effect": "If you ever claim to be or insinuate you are an (or any) Outsider, you die.",
             "notes": "If you are mad about being an Outsider, you might be executed.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Ogre",
             "difficulty": EXPERIMENTAL,
             "effect": "On your 1st night, choose a player (not yourself): you become their alignment (you dont know which) even if drunk or poisoned.”",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Plague Doctor",
             "difficulty": EXPERIMENTAL,
             "effect": "When you die, the Storyteller gains a Minion ability.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Politician",
             "difficulty": EXPERIMENTAL,
             "effect": "If you were the player most responsible for your team losing, you change alignment & win, even if dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Puzzlemaster",
             "difficulty": EXPERIMENTAL,
             "effect": "1 player is drunk, even if you die. If you guess (once) who it is, learn the Demon player, but guess wrong & get false info.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Recluse",
             "difficulty": TROUBLE_BREWING,
             "effect": "You might register as evil & as a Minion or Demon, even if dead.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Saint",
             "difficulty": TROUBLE_BREWING,
             "effect": "If you die by execution, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Snitch",
             "difficulty": EXPERIMENTAL,
             "effect": "Each Minion gets 3 bluffs.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Sweetheart",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "When you die, 1 player is drunk from now on.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Tinker",
             "difficulty": BAD_MOON_RISING,
             "effect": "You might die at any time.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Zealot",
             "difficulty": EXPERIMENTAL,
             "effect": "If there are 5 or more players alive, you must vote for every nomination.",
             ribbonColor: NIGHTLY_COLOR,
-            ribbonText: "OUTSIDER"
+            ribbonText: "OUTSIDER",
+            isOutsider: true
         },
         {
             "name": "Assassin",
@@ -833,6 +1070,48 @@ export const getRoles = () => {
             "effect": "Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.",
             isDemon: true,
             isEvil: true,
+            infoDuration: 'onNightEnd',
+            onSetup(game, player) {
+                console.log(`😈 Imp setup`)
+                const townsfolkNotInGame = game.getRolesNotInGame()
+                    .filter(r => !r.isEvil)
+                    .map(r => r.name)
+                console.log(townsfolkNotInGame)
+                player.info = {
+                    roles: townsfolkNotInGame,
+                    showsRoleDescriptions: true,
+                    text: 'These roles are <em>not</em> in this game.'
+                }
+            },
+            onNightStart(game, me) {
+                console.log(`Adding a new power`)
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+            },
+            actionDuration: 'onNightEnd',
+            doPlayerAction(game, me, actionData) {
+                if (game.phase != GamePhases.NIGHT) {   // Prevent multiple requests
+                    return
+                }
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+
+                chosenPlayer.addStatus({
+                    name: "Targeted By Demon",
+                    onNightEnd: () => {
+                        game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
+                        if (chosenPlayer.name == me.name && me.isDead) {
+                            const minions = game.getAliveMinions()
+                            if (minions.length == 0) {
+                                return
+                            }
+                            const minion = randomOf(...minions)
+                            minion.role = getRole("Imp")
+                        }
+                    }
+                })
+            }
         },
         {
             "name": "Kazali",

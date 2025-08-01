@@ -65,9 +65,11 @@
         const response = await fetchGame('POST', '/api/game', { scriptRoleNames: $scriptRoleNames })
         // privateKey is the same for the owner and the game
         $me = {...$me, privateKey: response.privateKey }
-        console.log({response})
         $roomCode = response.roomCode
-        goto('/online/online-game')
+        console.log({response, me: $me, roomCode: $roomCode})
+        setTimeout(() => {
+            goto('/online/online-game')
+        }, 250)
     }
 
 </script>

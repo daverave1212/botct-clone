@@ -490,3 +490,12 @@ export function executeBoolCallbackArray(_callbacks, finallyCallback) {
     }
     callNextCallback(true)
 }
+export function swapElementsAt(arr, i1, i2) {
+    if (i1 < 0 || i2 < 0 || i1 >= arr.length || i2 >= arr.length) {
+        return false
+    }
+    const temp = arr[i1]
+    arr[i1] = arr[i2]
+    arr[i2] = temp
+    return true
+}

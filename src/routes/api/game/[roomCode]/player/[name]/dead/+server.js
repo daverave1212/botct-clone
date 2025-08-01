@@ -4,6 +4,7 @@ import { SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 
 export async function POST({ request, params }) {
 
+    console.log(`Getting a dead player: ${params.name}`)
     if (!isAuthorizedForGame(request, params.roomCode)) {
         return response(null, 401)
     }

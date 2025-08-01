@@ -34,6 +34,7 @@
     import { get } from 'svelte/store';
     import { me } from '../../../stores/online/local/me.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
+    import { swapElementsAt } from '../../../lib/utils.js';
 
     let gameOwnerName = null
 
@@ -47,22 +48,64 @@
 
     let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
     async function refresh() {
-        if (_nFetchRetries >= 3)
+        function isRetryLimitExceeded() { return _nFetchRetries >= 3}
+        async function fetchThisGame() {
+            try {
+                const game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
+                console.log({game})
+                return game
+            } catch (e) {
+                _nFetchRetries += 1
+                console.error(e)
+                return null
+            }
+        }
+        function updateCountdownIfAny(game) {
+            if (game.countdownStart != null) {
+                countdownStart = game.countdownStart
+                countdownDuration = game.countdownDuration
+            } else {
+                countdownStart = null
+                countdownDuration = null
+                nSecondsRemaining = null
+            }
+        }
+        function closeDrawersIfPhaseChanged(game) {
+            console.log(`Checking game.phase=${game.phase} against ${$phase}`)
+            if (game.phase != $phase) {
+                console.log(`YES`)
+                isMyRoleDrawerOpen = false
+                isMyInfoDrawerOpen = false
+                isActionChoosePlayerDrawerOpen = false
+            }
+        }
+        function closeAllDrawers() {
+            isMyRoleDrawerOpen = false
+            isMyInfoDrawerOpen = false
+            isActionChoosePlayerDrawerOpen = false
+        }
+        function didPhaseChange(game) {
+            return game.phase != $phase
+        }
+        // function closeActionAndInfosIfNecessary(newPhase) {
+        //     if (newPhase == GamePhases.DAY) {
+        //         if (['onNightEnd', 'onDayStart'].includes($me.role.actionDuration)) {
+
+        //         }
+        //     }
+        // }
+
+        if (isRetryLimitExceeded())
             return
 
-        const gameRoomCode = $roomCode
-        if (gameRoomCode == null) {
-            throw `Null roomCode for online-game.`
+        const game = await fetchThisGame()
+
+        if (game == null) {
+            return
         }
 
-        let game
-        try {
-            game = await fetchGame('GET', `/api/game/${get(roomCode)}`)
-            console.log({game})
-        } catch (e) {
-            _nFetchRetries += 1
-            console.error(e)
-            return
+        if (didPhaseChange(game)) {
+            closeAllDrawers()
         }
 
         gameOwnerName = game.ownerName
@@ -71,18 +114,14 @@
         $scriptRoleNames = game.scriptRoleNames
 
         const newMe = game?.playersInRoom?.find(p => p.name == $me.name)
+        console.log({newMe})
         if (newMe) {
             $me = newMe
         }
 
-        if (game.countdownStart != null) {
-            countdownStart = game.countdownStart
-            countdownDuration = game.countdownDuration
-        } else {
-            countdownStart = null
-            countdownDuration = null
-            nSecondsRemaining = null
-        }
+        updateCountdownIfAny(game)
+
+        
     }
 
     async function maybeTickCountdown() {
@@ -115,13 +154,14 @@
         clearInterval(countdownIntervalId)
     })
     
-    $:availableRoles = $chosenScriptRoleNames == null? []: $chosenScriptRoleNames
+    $: availableRoles = $chosenScriptRoleNames == null? []: $chosenScriptRoleNames
 
     $: shouldShowSortTooltip =
         $hasExpandTooltip == false &&
         $playersInRoom.filter(player => player.role == null).length == 0 &&
         $hasSortTooltip
-    $: backgroundColor = $phase == 'night'? 'black': 'white'
+    $: backgroundColor = $phase == 'night'? '#18172e': 'white'
+
     
 
     const statusEffects = [
@@ -254,6 +294,11 @@
         await refresh()
     }
 
+    async function endDay() {
+        await fetchGame('POST', `/api/game/${$roomCode}/end-day`)
+        await refresh()
+    }
+
     async function kickPlayer(name) {
         const rc = $roomCode
         await fetchGame('DELETE', `/api/game/${rc}/player/${name}`)
@@ -266,6 +311,14 @@
         // await fetchGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
         await fetchGame('POST', `/api/game/${rc}/player/${name}/dead`)
         await refresh()
+    }
+    async function movePlayer(name, upOrDown) {
+        await fetchGame('POST', `/api/game/${rc}/player/${name}/move/${upOrDown}`)
+        const playerI = $playersInRoom.findIndex(p => p.name == name)
+        const otherPlayerI = upOrDown == 'up'? playerI - 1: (playerI + 1)
+        const newPlayerInRoom = [...$playersInRoom]
+        swapElementsAt(newPlayerInRoom)
+        $playersInRoom = newPlayerInRoom
     }
 
     async function onUsePowerClick() {
@@ -341,6 +394,9 @@
 >
     {#if $me.info != null}
         <div class="center-content flex-column margin-top-2">
+            {#if $me.info.roles?.length == 1}
+                <div class="margin-top-4"></div>
+            {/if}
             <div>
                 {#if $me.info.roles != null}
                     {#each $me.info.roles as roleName (roleName)}
@@ -404,12 +460,13 @@
     <button class="btn" style="background-color: #44AACC" on:click={onClickOnSortNight}>Sort for Night</button>
 </div>
 
-<div class="page" style="position: relative; background-color: {backgroundColor}">
+<div class="page" style="position: relative; transition: background-color 0.75s ease; background-color: {backgroundColor}">
 
     <ContactList className="margin-top-1">
 
         {#if $phase != null && $phase != GamePhases.NOT_STARTED}
-            <div class="center-content center-text" style={`
+            <div class="center-content center-text rounded" style={`
+                transition: background-color 0.75s ease;
                 height: 15vh;
                 background-color: ${
                     $phase == GamePhases.NIGHT?
@@ -431,14 +488,17 @@
                         '☀️ ':
                     ''
                 }{ $phase?.toUpperCase() }</h1>
+                {#if nSecondsRemaining != null}
+                    <h3>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h3>
+                {/if}
             </div>
         {/if}
 
-        {#if nSecondsRemaining != null}
-            <div style="height: 15vh" class="center-content center-text bg-white">
+        <!-- {#if nSecondsRemaining != null}
+            <div style="height: 15vh" class="center-content center-text bg-white rounded">
                 <h1>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h1>
             </div>
-        {/if}
+        {/if} -->
 
         {#each ($playersInRoom ?? []) as player (player.name)}
 
@@ -449,11 +509,16 @@
                     isDead={player.isDead}
                 >
                     <div class="flex-content wrap margin-top-1">
+                        <div>
+                            <button class="btn blue" on:click={() => movePlayer(player.name, 'up')}>Move Up</button>
+                            <button class="btn blue" on:click={() => movePlayer(player.name, 'down')}>Move Down</button>
+                        </div>
                         <button class="btn red" on:click={() => killPlayer(player.name)}>
-                            <img class="icon" src="/images/status/Dead.png"/> Kill
+                            <img class="icon" src="/images/status/Dead.png"/> Execute
                             <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
                         </button>
                         <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
+                        
                     </div>
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
@@ -476,6 +541,9 @@
         {#if $me.name == gameOwnerName}
             <button class="btn blue" on:click={startGame} style="position: relative;">
                 Start Game
+            </button>
+            <button class="btn colorful" on:click={endDay} style="position: relative;">
+                End Day
             </button>
         {/if}
 

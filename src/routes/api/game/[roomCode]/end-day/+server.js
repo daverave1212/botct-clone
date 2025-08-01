@@ -10,8 +10,7 @@ export async function POST({ request, url, params }) {
         return response(null, statusCode)
     }
 
-    game.start()
+    game.goToNightThenDayAsync()
 
-    return 'TODO'
-    
+    return response(null, 200)
 }

@@ -18,12 +18,15 @@ export function getRequestUser(request) {
 export function isAuthorizedForGame(request, roomCode) {
     const user = getRequestUser(request)
     const game = getGame(roomCode)
+    console.log(`Found user ${user?.name} pk=${user.privateKey} and game ${game?.roomCode} from ${roomCode} pk=${game?.privateKey}`)
     if (user == null || game == null) {
         return false
     }
+    console.log(`Checking PK and name:`)
     if (user.privateKey == game.privateKey && user.name == game.ownerName) {
         return true
     }
+    console.log(`Hmm....`)
     return false
 }
 
@@ -61,4 +64,13 @@ export function test(msg, condition) {
     } else {
         console.log(`❌ ${msg}`)
     }
+}
+export function swapElementsAt(arr, i1, i2) {
+    if (i1 < 0 || i2 < 0 || i1 >= arr.length || i2 >= arr.length) {
+        return false
+    }
+    const temp = arr[i1]
+    arr[i1] = arr[i2]
+    arr[i2] = temp
+    return true
 }

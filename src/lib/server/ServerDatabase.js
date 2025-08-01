@@ -2,6 +2,7 @@ import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, 
 import { browser } from '$app/environment'
 import { addPlayerToGameST, makeTestGame } from "./games"
 import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
+import { GamePhases } from "$lib/shared-lib/GamePhases"
 
 export const WEREWOLVES = 'werewolves'
 export const TOWNSFOLK = 'townsfolk'
@@ -258,7 +259,37 @@ export const getRoles = () => {
         {
             "name": "Dreamer",
             "difficulty": SECTS_AND_VIOLETS,
-            "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct."
+            "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct.",
+            onNightStart(game, me) {
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                }
+            },
+            actionDuration: 'onNightEnd',
+            infoDuration: 'onNightEnd',
+            doPlayerAction(game, me, actionData) {
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                const chosenPlayerRealRole = chosenPlayer.role?.name
+                const allScriptRoles = game.getScriptRoleObjects()
+                const randomOppositeRole =
+                    chosenPlayer.role.isEvil?
+                        randomOf(...(allScriptRoles.filter(r => !r.isEvil)))?.name
+                    :randomOf(...(allScriptRoles.filter(r => r.isEvil)))?.name
+                
+                if (randomOppositeRole == null) {
+                    me.info = {
+                        text: "You dreamed nothing."
+                    }
+                    return
+                }
+
+                const the2roles = randomizeArray([chosenPlayerRealRole, randomOppositeRole])
+                me.info = {
+                    roles: the2roles,
+                    text: `<em>${chosenPlayer.name}</em> is one of these roles.`
+                }
+            }
         },
         {
             "name": "Empath",
@@ -293,7 +324,15 @@ export const getRoles = () => {
         {
             "name": "Fool",
             "difficulty": BAD_MOON_RISING,
-            "effect": "The 1st time you die, you dont."
+            "effect": "The 1st time you die, you dont.",
+            onDeath(source, me) {
+                if (me.didUsePower) {
+                    return true
+                } else {
+                    me.didUsePower = false
+                    return false
+                }
+            }
         },
         {
             "name": "Fortune Teller",
@@ -481,6 +520,10 @@ export const getRoles = () => {
                 console.log(`!!! Did set my available action to: `)
                 console.log(me.availableAction)
             },
+            onDayStart(game, player) {
+                const me = game.getPlayer(player?.name || player)
+                me.availableAction = null
+            },
             doPlayerAction(game, me, actionData) {
                 if (me?.availableAction == null) {  // Prevent multiple requests
                     return
@@ -590,7 +633,13 @@ export const getRoles = () => {
         {
             "name": "Soldier",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You are safe from the Demon."
+            "effect": "You are safe from the Demon.",
+            onDeath(source) {
+                if (source.type == SourceOfDeathTypes.DEMON_KILL) {
+                    return false
+                }
+                return true
+            }
         },
         {
             "name": "Steward",
@@ -610,7 +659,23 @@ export const getRoles = () => {
         {
             "name": "Undertaker",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Each night*, you learn which character died by execution today."
+            "effect": "Each night*, you learn which character died by execution today.",
+            infoDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                const lastExecutedPlayer = game.getLastExecutedPlayer()
+                if (lastExecutedPlayer == null) {
+                    return
+                }
+                const isSamePlayer = me.lastKnownKilledPlayerName == lastExecutedPlayer.name
+                if (isSamePlayer) {
+                    return
+                }
+
+                me.lastKnownKilledPlayerName = lastExecutedPlayer.name
+                me.info = {
+                    roles: [lastExecutedPlayer.role?.name]
+                }
+            }
         },
         {
             "name": "Village Idiot",
@@ -1034,6 +1099,7 @@ export const getRoles = () => {
             "effect": "Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.",
             isDemon: true,
             isEvil: true,
+            infoDuration: 'onNightEnd',
             onSetup(game, player) {
                 console.log(`😈 Imp setup`)
                 const townsfolkNotInGame = game.getRolesNotInGame()
@@ -1046,15 +1112,16 @@ export const getRoles = () => {
                     text: 'These roles are <em>not</em> in this game.'
                 }
             },
-            onNightStart(game, player) {
-                const me = game.getPlayer(player?.name || player)
+            onNightStart(game, me) {
+                console.log(`Adding a new power`)
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER,
                     clientDuration: ActionDurations.UNTIL_USED_OR_DAY
                 }
             },
+            actionDuration: 'onNightEnd',
             doPlayerAction(game, me, actionData) {
-                if (me?.availableAction == null) {  // Prevent multiple requests
+                if (game.phase != GamePhases.NIGHT) {   // Prevent multiple requests
                     return
                 }
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
@@ -1063,9 +1130,16 @@ export const getRoles = () => {
                     name: "Targeted By Demon",
                     onNightEnd: () => {
                         game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
+                        if (chosenPlayer.name == me.name && me.isDead) {
+                            const minions = game.getAliveMinions()
+                            if (minions.length == 0) {
+                                return
+                            }
+                            const minion = randomOf(...minions)
+                            minion.role = getRole("Imp")
+                        }
                     }
                 })
-                me.availableAction = null
             }
         },
         {
