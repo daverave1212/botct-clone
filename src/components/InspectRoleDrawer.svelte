@@ -30,7 +30,10 @@
 <DrawerPage
     isOpen={isOpen}
     zIndex="485 !important"
-    on:click={() => setIsOpen(false)}
+    on:click={(evt) => {
+        evt.stopPropagation()
+        setIsOpen(false)
+    }}
 >
     <div class="padded inspector">
         {#if role != null}

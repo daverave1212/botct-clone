@@ -58,6 +58,7 @@ class Player {
 
         this.role = null
         this.isDrunk = false
+        this.isPoisoned = false
         
         this.isDead = false
         this.changedAlignment = null
@@ -70,6 +71,10 @@ class Player {
 
     isEvil() {
         return this.role?.isEvil || this.changedAlignment == 'evil'
+    }
+
+    isDrunkOrPoisoned() {
+        return this.isPoisoned || this.isDrunk
     }
 
     removeStatus(statusEffectName) {
@@ -88,6 +93,7 @@ class Game {
     ownerName
     
     roomCode
+    scriptName
     scriptRoleNames
     privateKey
 
@@ -106,6 +112,7 @@ class Game {
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
+        this.scriptName = 'A Custom Script'
         this.scriptRoleNames = []
         this.privateKey = createRandomCode(6)
 
@@ -481,21 +488,6 @@ class Game {
     // Technical Utils
     toJsonObject() {
         return {...this}
-        // return {
-        //     ownerName: this.ownerName,
-            
-        //     roomCode: this.roomCode,
-        //     privateKey: this.privateKey,
-        //     playersInRoom: this.playersInRoom,
-            
-        //     scriptRoleNames: this.scriptRoleNames,
-
-        //     countdownRemaining: this.countdownRemaining,
-        //     countdownStart: this.countdownStart,
-        //     countdownDuration: this.countdownDuration,
-        //     phase: this.phase,
-        //     winner: this.winner
-        // }
     }
     doAfterCountdown(duration, cb) {
         if (this.countdownStart != null || this.countdownDuration != null) {

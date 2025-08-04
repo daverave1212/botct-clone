@@ -6,7 +6,25 @@ import { BAD_MOON_RISING, SECTS_AND_VIOLETS, TROUBLE_BREWING, getRoleByI, getRol
 const DEFAULT_SCRIPTS = {
     'Trouble Brewing': getRoles().filter(role => role.difficulty == TROUBLE_BREWING).map(role => role.name),
     'Bad Moon Rising': getRoles().filter(role => role.difficulty == BAD_MOON_RISING).map(role => role.name),
-    'Sects and Violets': getRoles().filter(role => role.difficulty == SECTS_AND_VIOLETS).map(role => role.name)
+    'Sects and Violets': getRoles().filter(role => role.difficulty == SECTS_AND_VIOLETS).map(role => role.name),
+    'My Custom Script': [    // TODO: Remove this and replace it
+        'Investigator',
+        'Librarian',
+        'Grandmother',
+        'Clockmaker',
+        'Empath',
+        'Dreamer',
+        'Monk',
+        'Undertaker',
+        'Fool',
+        'Soldier',
+
+        'Drunk',
+        'Moonchild',
+        'Mutant',
+
+        'Imp'
+    ]
 }
 
 export const customScripts = localStorageWritable('customScripts', DEFAULT_SCRIPTS)
@@ -15,8 +33,10 @@ export function resetCustomScripts() {
     customScripts.set(DEFAULT_SCRIPTS)
 }
 
+export function getCustomScriptRoleNames(scriptName) {
+    return get(customScripts)[scriptName] || []     // To work when preloading
+}
 export function setCustomScript(scriptName, roleNamesOrIs) {
-
     if (!Array.isArray(roleNamesOrIs)) {
         console.log({roleNamesOrIs})
         alert(`Internal error: roles given are not an array but ${typeof roleNamesOrIs}. Printed object to console.`)
