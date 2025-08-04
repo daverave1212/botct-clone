@@ -6,6 +6,7 @@
 </style>
 
 <script>
+	import { InfoTypes } from '$lib/shared-lib/GamePhases.js';
 	import { phase, playersInRoom, roomCode, scriptName, scriptRoleNames } from '../../../stores/online/local/room.js';
     import { GamePhases, ActionDurations, ActionTypes } from '$lib/shared-lib/GamePhases.js'
     import { browser } from '$app/environment'
@@ -46,6 +47,7 @@
     let nSecondsRemaining = null
 
     let isMyInfoDrawerOpen = false
+    let isMyInfoRolesDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
     let isAllRolesDrawerOpen = false
     let roleBeingInspected = null
@@ -61,6 +63,7 @@
 
     function closeAllDrawers() {
         isMyInfoDrawerOpen = false
+        isMyInfoRolesDrawerOpen = false
         isActionChoosePlayerDrawerOpen = false
         isAllRolesDrawerOpen = false
         roleBeingInspected = null
@@ -229,33 +232,6 @@
         setPlayerStateI(playerI, player)
     }
 
-    function closeRoleChooserDrawerWithoutSideEffects() {
-        isAllRolesDrawerOpen = false
-    }
-
-    function onClickOnSortNight() {
-        // const filterExtraRequiredRolesFunc = role => role => role.category == NIGHTLY || role.category == SPECIAL_NIGHTLY
-        // addMissingRequiredRoles(filterExtraRequiredRolesFunc)
-        sortCurrentRolesNightly()
-    }
-    function onClickOnSortSetup() {
-        $hasSortTooltip = false
-        // const filterExtraRequiredRolesFunc = role => role => role.category == SETUP || role.category == SPECIAL_SETUP
-        // addMissingRequiredRoles(filterExtraRequiredRolesFunc)
-        sortCurrentRolesSetup()
-    }
-    function onClickOnCleanup() {
-        removePlaceholderRoles()
-    }
-    function onClickOnAdd() {
-        const name = prompt('Player name')
-        const player = addPlayerAdded({}, name)
-    }
-    function onRemovePlayer(i) {
-        const player = $playersInRoom[i]
-        removePlayer(i)
-    }
-
     function openModal(text, buttonText, callback) {
         isModalOpen = true
         modalText = text
@@ -385,6 +361,31 @@
             </div>
         {/each}
     </div>
+</DrawerPage>
+
+<DrawerPage
+    isOpen={isMyInfoRolesDrawerOpen}
+    zIndex="487 !important"
+    on:click={() => {}}
+>
+
+    {#if $me.info?.playersWithRoles != null}
+        <ContactList className="margin-top-2">
+            {#each ($me.info.playersWithRoles ?? []) as player (player.name)}
+                <div style="width: 100%" class="flex-row gap-1">
+                    <MinimalContact
+                        name={player.name}
+                        src={`/images/role-thumbnails/${player.roleName}.webp`}
+                        isDead={player.isDead}
+                        on:contact-click={name => {
+                            isMyInfoRolesDrawerOpen = false
+                        }}
+                    />
+                </div>
+            {/each}
+        </ContactList>
+    {/if}
+
 </DrawerPage>
 
 <DrawerPage
@@ -526,7 +527,11 @@
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
                     <button class="btn blue glow-blink" style="--blink-color: var(--blue-color)" on:click={() => {
-                        isMyInfoDrawerOpen = true
+                        if ($me.info.type == InfoTypes.PLAYERS_WITH_ROLES) {
+                            isMyInfoRolesDrawerOpen = true
+                        } else {
+                            isMyInfoDrawerOpen = true
+                        }
                     }}>Secret Info</button>
                 {/if}
                 {#if $me.availableAction != null && $me.name == player.name}

@@ -4,6 +4,7 @@ import { addPlayerToGameST, makeTestGame } from "./games"
 import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
 import { GamePhases } from "$lib/shared-lib/GamePhases"
 import { randomInt } from "$lib/shared-lib/shared-utils"
+import { InfoTypes } from "$lib/shared-lib/GamePhases"
 
 export const EVILS = 'evils'
 export const TOWNSFOLK = 'townsfolk'
@@ -313,8 +314,8 @@ export const getRoles = () => {
             "effect": "Each night, you learn how many of your 2 alive neighbors are evil.",
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
-                if (player.isDrunk) {
-                    player.info = {
+                if (me.isDrunk) {
+                    me.info = {
                         text: `<h1>${randomInt(0, 2)}</h1>`
                     }
                     return
@@ -786,6 +787,11 @@ export const getRoles = () => {
             "effect": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately."
         },
         {
+            "name": "Maiden",
+            "difficulty": CUSTOM_TEST,
+            "effect": "The 1st time you would be executed, you don't die. If the nominator is a Townsfolk, they are executed instead."
+        },
+        {
             "name": "Washerwoman",
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Townsfolk.",
@@ -940,7 +946,7 @@ export const getRoles = () => {
                     type: ActionTypes.JUST_CLICK
                 }
             },
-            onPlayerAction(game, me, data) {
+            onPlayerAction(game, me, actionData) {
                 game.tryKillPlayer(me, { type: SourceOfDeathTypes.OTHER })
             }
         },
@@ -1031,6 +1037,37 @@ export const getRoles = () => {
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            actionDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                if (me.didUsePower) {
+                    return
+                }
+                me.action = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+            },
+            onPlayerAction(game, me, actionData) {
+                if (me.isDrunkOrPoisoned()) {
+                    return
+                }
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                if (chosenPlayer == null) {
+                    return
+                }
+                me.chosenPlayerName = chosenPlayer.name
+                me.didUsePower = true
+            },
+            onDayStart(game, me) {
+                if (me.chosenPlayerName == null) {
+                    return
+                }
+                me.chosenPlayerName.statusEffects = null
+                me.chosenPlayerName.statusEffects.push({
+                    name: 'Assassinated',
+                    isPoisoned: true
+                })
+                game.tryKillPlayer(me.chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+            }
         },
         {
             "name": "Baron",
@@ -1184,6 +1221,16 @@ export const getRoles = () => {
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            infoDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                me.info = {
+                    type: InfoTypes.PLAYERS_WITH_ROLES,
+                    playersWithRoles: game.playersInRoom.map(p => ({
+                        name: p.name,
+                        roleName: p.role?.name
+                    }))
+                }
+            }
         },
         {
             "name": "Summoner",

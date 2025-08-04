@@ -18,10 +18,14 @@ const DEFAULT_SCRIPTS = {
         'Undertaker',
         'Fool',
         'Soldier',
+        'Maiden',
 
         'Drunk',
         'Moonchild',
         'Mutant',
+
+        'Assassin', // Not tested
+        'Spy',
 
         'Imp'
     ]

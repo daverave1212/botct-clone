@@ -1,9 +1,8 @@
 import { ActionTypes, ActionDurations, GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 import { roomCode } from "../../stores/online/local/room"
+import { InfoTypes } from "$lib/shared-lib/GamePhases"
 import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "./ServerDatabase"
 import { createRandomCode, popArrayElementFind, randomizeArray, swapElementsAt } from "./utils"
-
-
 const IS_DEBUG = true
 
 
@@ -22,17 +21,18 @@ const SOURCE_OF_DEATH_TEMPLATE = {
 }
 
 const INFO_TEMPLATE = {
+    type: InfoTypes.ROLES,
     roles: ['Professor', 'Investigator'],
     showsRoleDescriptions: false,
     text: ''
 }
 const AVAILABLE_ACTION_TEMPLATE = {
-    type: ActionTypes.CHOOSE_PLAYER,
-    clientDuration: ActionDurations.UNTIL_USED_OR_DAY   // Only used in client to prevent multiple requests
+    type: ActionTypes.CHOOSE_PLAYER
 }
 const STATUS_EFFECT_TEMPLATE = {
     name: 'Protected',
     duration: StatusEffectDuration.UNTIL_NIGHT,
+    isPoisoned: false,
     onDeath: (source) => true,    // Returns true if should continue death
 }
 
@@ -74,7 +74,7 @@ class Player {
     }
 
     isDrunkOrPoisoned() {
-        return this.isPoisoned || this.isDrunk
+        return this.isPoisoned || this.statusEffects.find(se => se.isPoisoned) != null
     }
 
     removeStatus(statusEffectName) {
@@ -195,14 +195,10 @@ class Game {
 
         this.#applyAllEventsAt('onAssignRole')
 
-        
-
-
-
-        // if (IS_DEBUG) {
-        //     this.playersInRoom[0].role = getRole('Imp')
-        //     this.playersInRoom[1].role = getRole('Dreamer')
-        // }
+        if (IS_DEBUG) {
+            this.playersInRoom[0].role = getRole('Spy')
+            // this.playersInRoom[1].role = getRole('Dreamer')
+        }
     }
 
     getRolesToAssign() {

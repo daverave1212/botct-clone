@@ -6,6 +6,11 @@ export const GamePhases = {
     NIGHT: 'night'
 }
 
+export const InfoTypes = {
+    ROLES: 'roles',
+    PLAYERS_WITH_ROLES: 'players-with-roles'
+}
+
 export const ActionTypes = {
     CHOOSE_PLAYER: 'choose-player',
     JUST_CLICK: 'just-click'
