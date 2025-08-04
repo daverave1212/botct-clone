@@ -6,7 +6,8 @@
 	import { fetchGame } from '../../../lib/online-utils.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
-    import { roomCode, scriptRoleNames } from '../../../stores/online/local/room.js';
+    import { roomCode, scriptName } from '../../../stores/online/local/room.js';
+    import { getCustomScriptRoleNames, setCustomScript } from '../../../stores/custom-scripts-store.js';
 
 
     let isRoleChooserOpen = false
@@ -44,25 +45,20 @@
         $roomCode = inputRoomCode
         const newMe = await fetchGame('POST', `/api/game/${inputRoomCode}/player`)
         $me = newMe
-        goto('/online/online-game')
+        const game = await fetchGame('GET', `/api/game/${inputRoomCode}`)
+        $scriptName = game.scriptName
+        setCustomScript(game.scriptName, game.scriptRoleNames)
+        // Fixes localStorage not finishing updating before we go to another page
+        setTimeout(() => {
+            goto('/online/online-game')
+        }, 1250)
     }
 
     async function onCreate() {
-        $scriptRoleNames = [    // TODO: Remove this and replace it
-            'Fool',
-            'Monk',
-            'Mutant',
-            'Soldier',
-            'Mathematician',
-            'Librarian',
-            'Investigator',
-            'Imp',
-            'Spy',
-            'Baron',
-            'Poisoner'
-        ]
+        $scriptName = "My Custom Script"
+        const scriptRoleNames = getCustomScriptRoleNames($scriptName)
 
-        const response = await fetchGame('POST', '/api/game', { scriptRoleNames: $scriptRoleNames })
+        const response = await fetchGame('POST', '/api/game', { scriptRoleNames, scriptName: $scriptName })
         // privateKey is the same for the owner and the game
         $me = {...$me, privateKey: response.privateKey }
         $roomCode = response.roomCode

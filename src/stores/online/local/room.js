@@ -9,3 +9,5 @@ export const phase = localStorageWritable('phase', null)
 export const countdownRemaining = localStorageWritable('countdownRemaining', null)
 
 export const scriptRoleNames = localStorageWritable('scriptRoleNames', [])
+
+export const scriptName = localStorageWritable('scriptName', null)

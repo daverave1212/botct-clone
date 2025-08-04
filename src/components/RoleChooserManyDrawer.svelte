@@ -43,18 +43,22 @@
 
     export let isOpen
     export let onClickOnRole
+    export let onClickOnRoleName
     export let onClickOutside
 
     $: {
         console.log({roles})
     }
 
-    function onPortraitClick(i) {
+    function onPortraitClick(i, name) {
         if (roles[i].isValid == false) {
             return
         }
-        onClickOnRole(i)
+        onClickOnRole?.(i)
+        onClickOnRoleName?.(name)
     }
+
+
 </script>
 
 <DrawerPage isOpen={isOpen} on:click={evt => onClickOutside()}>
@@ -68,7 +72,7 @@
             <RoleList>
                 {#each roles as role, j ('Section' + i + role.name + j)}
                     {#if sectionFilter(j)}
-                        <RoleCard role={role} on:role-click={(evt) => onPortraitClick(j)}/>
+                        <RoleCard role={role} on:role-click={(evt) => onPortraitClick(j, role.name) }/>
                     {/if}
                 {/each}
             </RoleList>

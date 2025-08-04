@@ -6,7 +6,7 @@
 </style>
 
 <script>
-	import { phase, playersInRoom, roomCode, scriptRoleNames } from '../../../stores/online/local/room.js';
+	import { phase, playersInRoom, roomCode, scriptName, scriptRoleNames } from '../../../stores/online/local/room.js';
     import { GamePhases, ActionDurations, ActionTypes } from '$lib/shared-lib/GamePhases.js'
     import { browser } from '$app/environment'
     import { afterNavigate } from '$app/navigation'
@@ -36,6 +36,7 @@
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
     import { swapElementsAt } from '../../../lib/utils.js';
     import Toaster from '../../../components-standalone/Toaster.svelte';
+    import { getCustomScriptRoleNames } from '../../../stores/custom-scripts-store.js';
 
 
     let gameOwnerName = null
@@ -44,9 +45,10 @@
     let countdownDuration = null
     let nSecondsRemaining = null
 
-    let isMyRoleDrawerOpen = false
     let isMyInfoDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
+    let isAllRolesDrawerOpen = false
+    let roleBeingInspected = null
 
     let winner = null
 
@@ -57,7 +59,12 @@
 
     let showToaster = () => {}
 
-    
+    function closeAllDrawers() {
+        isMyInfoDrawerOpen = false
+        isActionChoosePlayerDrawerOpen = false
+        isAllRolesDrawerOpen = false
+        roleBeingInspected = null
+    }
 
     async function fetchOnlineGame(method, url, data) {
         const result = await fetchGame(method, url, data)
@@ -91,30 +98,9 @@
                 nSecondsRemaining = null
             }
         }
-        function closeDrawersIfPhaseChanged(game) {
-            console.log(`Checking game.phase=${game.phase} against ${$phase}`)
-            if (game.phase != $phase) {
-                console.log(`YES`)
-                isMyRoleDrawerOpen = false
-                isMyInfoDrawerOpen = false
-                isActionChoosePlayerDrawerOpen = false
-            }
-        }
-        function closeAllDrawers() {
-            isMyRoleDrawerOpen = false
-            isMyInfoDrawerOpen = false
-            isActionChoosePlayerDrawerOpen = false
-        }
         function didPhaseChange(game) {
             return game.phase != $phase
         }
-        // function closeActionAndInfosIfNecessary(newPhase) {
-        //     if (newPhase == GamePhases.DAY) {
-        //         if (['onNightEnd', 'onDayStart'].includes($me.role.actionDuration)) {
-
-        //         }
-        //     }
-        // }
 
         if (isRetryLimitExceeded())
             return
@@ -140,14 +126,11 @@
         $scriptRoleNames = game.scriptRoleNames
 
         const newMe = game?.playersInRoom?.find(p => p.name == $me.name)
-        console.log({newMe})
         if (newMe) {
             $me = newMe
         }
 
         updateCountdownIfAny(game)
-
-        
     }
     async function maybeTickCountdown() {
         if (countdownStart == null) {
@@ -229,40 +212,6 @@
     let modalOnConfirm = () => {}
     let modalOnCancel = () => {}
 
-
-    // Functions
-    function openRoleChangeMenuForPlayerI(i) {
-        console.log('Hiding tooltip')
-        $hasSetRoleTooltip = false
-        currentlySelectedRoleI = i
-        isRoleChooserOpen = true
-        console.log($hasSetRoleTooltip)
-    }
-    function changeRole(playerI, newRoleI) {
-        console.log(`Player ${playerI} clicked on role ${newRoleI}`)
-        const newRoleName = availableRoles[newRoleI]
-        const newRole = getRole(newRoleName)
-        isRoleChooserOpen = false
-        console.log({newRole, state: $playersInRoom[playerI] })
-        const playerState = $playersInRoom[playerI]
-        const previousRole = playerState.role
-        const newPlayerState = {
-            ...playerState,
-            name: newRole.name,
-            src: newRole.src == null? `images/roles/${newRole.name}.png`: newRole.src,
-            role: newRole.name
-        }
-        $playersInRoom[playerI] = newPlayerState
-        $playersInRoom = $playersInRoom
-    }
-
-
-    function togglePlayerDead(i) {
-        const player = $playersInRoom[i]
-        player.isDead = !player.isDead
-        setPlayerStateI(i, player)
-    }
-
     function onClickOnStatusEffect(playerI, statusName) {
         console.log('Adding status ' + statusName)
         const player = $playersInRoom[playerI]
@@ -281,8 +230,7 @@
     }
 
     function closeRoleChooserDrawerWithoutSideEffects() {
-        currentlySelectedRoleI = null
-        isRoleChooserOpen = false
+        isAllRolesDrawerOpen = false
     }
 
     function onClickOnSortNight() {
@@ -484,34 +432,34 @@
 </DrawerPage>
 
 <InspectRoleDrawer
-    role={getRole($me.role?.name)}
-    isOpen={isMyRoleDrawerOpen}
+    role={roleBeingInspected}
+    isOpen={roleBeingInspected != null}
     setIsOpen={bool => {
-        isMyRoleDrawerOpen = false
+        closeAllDrawers()
     }}
 />
 
 <RoleChooserManyDrawer
-    isOpen={isRoleChooserOpen}
-    roles={availableRoles.map(name => getRole(name))}
+    isOpen={isAllRolesDrawerOpen}
+    roles={getCustomScriptRoleNames($scriptName).map(rn => getRole(rn))}
     
     sectionFilters={[_ => true]}
-    sectionTitles={['Choose an avatar']}
+    sectionTitles={['All Roles in This Game']}
     sectionTexts={['']}
 
-    onClickOnRole={clickedRoleI => changeRole(currentlySelectedRoleI, clickedRoleI)}
-    onClickOutside={() => closeRoleChooserDrawerWithoutSideEffects()}
+    onClickOnRoleName={clickedRoleName => {
+        isAllRolesDrawerOpen = false
+        roleBeingInspected = getRole(clickedRoleName)
+    }}
+    onClickOutside={() => {
+        isAllRolesDrawerOpen = false
+    }}
 ></RoleChooserManyDrawer>
 
 <div class="contact-list-header shadowed bg-white">
-    <button class="btn" style="background-color: #AA88BB; position: relative;" on:click={onClickOnCleanup}>
-        Cleanup
-    </button>
-    <button class="btn" style="background-color: #BB8844; position: relative;" on:click={onClickOnSortSetup}>
-        <Tooltip isShown={shouldShowSortTooltip} top="3rem" left="calc(50% - 0.5rem)" width="40vw">Sort players for Setup for Night.</Tooltip>
-        Sort for Setup
-    </button>
-    <button class="btn" style="background-color: #44AACC" on:click={onClickOnSortNight}>Sort for Night</button>
+    <button class="btn" style="background-color: #22BBDD" on:click={() => {
+        isAllRolesDrawerOpen = true
+    }}>See All Roles</button>
 </div>
 
 <div class="page" style="position: relative; transition: background-color 0.75s ease; background-color: {backgroundColor}">
@@ -585,7 +533,7 @@
                 {/if}
                 {#if $me.role != null && $me.name == player.name}
                     <button class="btn colorful" on:click={() => {
-                        isMyRoleDrawerOpen = true
+                        roleBeingInspected = $me.role
                     }}>See Role</button>
                 {/if}
             </div>

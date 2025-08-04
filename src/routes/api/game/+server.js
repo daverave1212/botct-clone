@@ -11,6 +11,7 @@ export async function POST({ request, url, params }) {
     addPlayerToGameST({...player, privateKey: game.privateKey}, game.roomCode)
 
     game.scriptRoleNames = data.scriptRoleNames
+    game.scriptName = data.scriptName
 
     return response({
         roomCode: game.roomCode,
