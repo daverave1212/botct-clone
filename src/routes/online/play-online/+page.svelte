@@ -1,9 +1,9 @@
 <script>
-	import { me } from './../../../stores/online/local/me.js';
-	import { allIcons } from './../../../lib/IconsDatabase.js';
-	import { goto } from '$app/navigation';
-	import { fly } from 'svelte/transition';
-	import { fetchGame } from '../../../lib/online-utils.js';
+    import { me } from './../../../stores/online/local/me.js';
+    import { allIcons } from './../../../lib/IconsDatabase.js';
+    import { goto } from '$app/navigation';
+    import { fly } from 'svelte/transition';
+    import { fetchGame } from '../../../lib/online-utils.js';
     import RoundCardPortrait from '../../../components/RoundCardPortrait.svelte';
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
     import { roomCode, scriptName } from '../../../stores/online/local/room.js';
@@ -59,6 +59,7 @@
         const scriptRoleNames = getCustomScriptRoleNames($scriptName)
 
         const response = await fetchGame('POST', '/api/game', { scriptRoleNames, scriptName: $scriptName })
+
         // privateKey is the same for the owner and the game
         $me = {...$me, privateKey: response.privateKey }
         $roomCode = response.roomCode

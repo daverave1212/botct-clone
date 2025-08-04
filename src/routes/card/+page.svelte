@@ -31,7 +31,7 @@
     import { onMount } from "svelte";
     import { clearCanvas, clearRect, drawImageOnCanvasAsync, drawText, drawTextLines, drawTextWordsWithHTML } from "../../lib/utils";
     import RoleChooserDrawer from "../../components/RoleChooserDrawer.svelte";
-    import { EVIL_COLOR, getEvent, getLocationCards, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, WEREWOLVES } from "../../lib/Database";
+    import { EVIL_COLOR, getEvent, getLocationCards, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, EVILS } from "../../lib/Database";
     import { getMods } from "../../lib/ModsDatabase";
 
     const cardWidth = 756
@@ -98,7 +98,7 @@
                 color: brownTextColor
             })
         }
-        if (objectBeingDrawn.team == WEREWOLVES) {
+        if (objectBeingDrawn.team == EVILS) {
             await drawImageOnCanvasAsync(canvas, '/images/card-templating/Evil Badge.png', x + cardWidth - 196 - 20, y + 0 + 20)
         }
         if (objectBeingDrawn.isMod) {

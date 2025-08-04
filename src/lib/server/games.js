@@ -1,7 +1,7 @@
 import { ActionTypes, ActionDurations, GamePhases, StatusEffectDuration, SourceOfDeathTypes } from "$lib/shared-lib/GamePhases"
 import { roomCode } from "../../stores/online/local/room"
-import { getNightlyRolePriority, getRole, getSetupRolePriority } from "./ServerDatabase"
-import { createRandomCode, randomizeArray, swapElementsAt } from "./utils"
+import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "./ServerDatabase"
+import { createRandomCode, popArrayElementFind, randomizeArray, swapElementsAt } from "./utils"
 
 
 const IS_DEBUG = true
@@ -107,6 +107,8 @@ class Game {
 
     killHistory
 
+    winner
+
     constructor(ownerName) {
         this.ownerName = ownerName
         this.roomCode = generateRandomRoomCode()
@@ -183,9 +185,57 @@ class Game {
     assignRoles() {
         if (IS_DEBUG) {
             this.setTestPlayersWithRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
-            this.playersInRoom[0].role = getRole('Imp')
-            this.playersInRoom[1].role = getRole('Dreamer')
         }
+
+        const rolesToAssign = randomizeArray(this.getRolesToAssign())
+        console.log({rolesToAssign})
+        for (let i = 0; i < rolesToAssign.length; i++) {
+            this.playersInRoom[i].role = rolesToAssign[i]
+        }
+
+        this.#applyAllEventsAt('onAssignRole')
+
+        
+
+
+
+        // if (IS_DEBUG) {
+        //     this.playersInRoom[0].role = getRole('Imp')
+        //     this.playersInRoom[1].role = getRole('Dreamer')
+        // }
+    }
+
+    getRolesToAssign() {
+        const { nTownsfolk, nOutsiders, nMinions, nDemons } = getRoleNumbersByPlayers(this.playersInRoom.length)
+        const scriptRoles = randomizeArray(this.scriptRoleNames.map(rn => getRole(rn)))
+        const rolesInThisGame = []
+
+        for (let i = 0; i < nDemons; i++) {
+            const role = popArrayElementFind(scriptRoles, r => r.isDemon)
+            if (role) {
+                rolesInThisGame.push(role)
+            }
+        }
+        for (let i = 0; i < nMinions; i++) {
+            const role = popArrayElementFind(scriptRoles, r => r.isEvil && !r.isDemon)
+            if (role) {
+                rolesInThisGame.push(role)
+            }
+        }
+        for (let i = 0; i < nOutsiders; i++) {
+            const role = popArrayElementFind(scriptRoles, r => r.isOutsider)
+            if (role) {
+                rolesInThisGame.push(role)
+            }
+        }
+        for (let i = 0; i < nTownsfolk; i++) {
+            const role = popArrayElementFind(scriptRoles, r => !r.isOutsider && !r.isEvil)
+            if (role) {
+                rolesInThisGame.push(role)
+            }
+        }
+        
+        return rolesInThisGame
     }
 
     doRolesSetup() {
@@ -246,7 +296,7 @@ class Game {
         return randomizeArray(this.playersInRoom.filter(p => !p.isEvil()))
     }
     getNonOutsiderTownsfolk() {
-        return this.getTownsfolk().filter(p => !p.isOutsider)
+        return this.getTownsfolk().filter(p => !p.role?.isOutsider && !p.isDrunk)
     }
     getAliveTownsfolk() { return this.getTownsfolk().filter(p => !p.isDead)}
     getOutsiders() {
@@ -313,15 +363,14 @@ class Game {
         const playerRoleNames = this.playersInRoom.map(p => p.role.name)
         const cleanedPlayerRoleNames = playerRoleNames.filter(rn => rn != null) // For safety
 
-        console.log(playerRoleNames.join(', '))
-        console.log(cleanedPlayerRoleNames.join(', '))
-        console.log(this.scriptRoleNames.join(', '))
-
         const isRoleInGame = rn => cleanedPlayerRoleNames.includes(rn)
 
         return this.scriptRoleNames
             .filter(rn => !isRoleInGame(rn))
             .map(rn => getRole(rn))
+    }
+    getRolesInGame() {
+        return this.playersInRoom.map(p => p.isDrunk? getRole('Drunk'): p.role)
     }
     checkWinConditions() {
         const demons = this.playersInRoom.filter(p => p.role?.isDemon)

@@ -165,6 +165,11 @@
 .strikethrough {
     text-decoration: line-through;
 }
+.prevent-select, .unselectable {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
 
 
 @media (orientation: landscape) {

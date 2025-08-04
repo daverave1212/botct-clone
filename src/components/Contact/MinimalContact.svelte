@@ -33,11 +33,11 @@
             <!-- svelte-ignore a11y-missing-attribute -->
             <img
                 src={src == null? 'images/user.png' : src}
-                class="center"
+                class="center unselectable"
             />
         </div>
         <div class="right-wrapper upper-half">
-            <span class="subtitle" on:click={toggleContent}>{name}</span>
+            <span class="subtitle unselectable" on:click={toggleContent}>{name}</span>
         </div>
     </div>
     <div class="{SUBCONTENT_CLASS}">

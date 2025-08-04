@@ -3,8 +3,9 @@ import { browser } from '$app/environment'
 import { addPlayerToGameST, makeTestGame } from "./games"
 import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
 import { GamePhases } from "$lib/shared-lib/GamePhases"
+import { randomInt } from "$lib/shared-lib/shared-utils"
 
-export const WEREWOLVES = 'werewolves'
+export const EVILS = 'evils'
 export const TOWNSFOLK = 'townsfolk'
 export const OTHER = 'other'
 
@@ -63,7 +64,7 @@ export const EVIL_SETUP = 'evil-setup'
 export const SPECIAL_NIGHTLY = 'special-nightly'
 export const OTHER_CATEGORY = 'other-category'
 
-export const NIGHTLY_WEREWOLVES = 'nightly-werewolves'
+export const NIGHTLY_EVILS = 'nightly-evils'
 
 export const EVIL_COLOR = 'rgb(194, 5, 30)'
 export const SETUP_COLOR = 'rgb(90, 138, 0)'
@@ -178,6 +179,13 @@ export const getRoles = () => {
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "You start knowing how many steps from the Demon to its nearest Minion.",
             onSetup: function(game, player) {
+                if (player.isDrunk) {
+                    player.info = {
+                        text: `<h1>${randomInt(1, Math.floor(game.playersInRoom.length / 2))}</h1>`
+                    }
+                    return
+                }
+                
                 const demonIndex = game.playersInRoom.findIndex(p => p.role?.isDemon)
 
                 if (demonIndex == -1) {
@@ -270,9 +278,9 @@ export const getRoles = () => {
             infoDuration: 'onNightEnd',
             onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
-                const chosenPlayerRealRole = chosenPlayer.role?.name
+                let chosenPlayerRealRole = chosenPlayer.role?.name
                 const allScriptRoles = game.getScriptRoleObjects()
-                const randomOppositeRole =
+                let randomOppositeRole =
                     chosenPlayer.role.isEvil?
                         randomOf(...(allScriptRoles.filter(r => !r.isEvil)))?.name
                     :randomOf(...(allScriptRoles.filter(r => r.isEvil)))?.name
@@ -282,6 +290,14 @@ export const getRoles = () => {
                         text: "You dreamed nothing."
                     }
                     return
+                }
+
+                if (me.isDrunk) {
+                    const scriptRoles = game.getScriptRoleObjects()
+                    const scriptEvils = scriptRoles.filter(r => r.isEvil)
+                    const scriptNonEvils = scriptRoles.filter(r => !r.isEvil && r.name != me.role.name)
+                    chosenPlayerRealRole = randomOf(...scriptEvils).name
+                    randomOppositeRole = randomOf(...scriptNonEvils).name
                 }
 
                 const the2roles = randomizeArray([chosenPlayerRealRole, randomOppositeRole])
@@ -297,6 +313,13 @@ export const getRoles = () => {
             "effect": "Each night, you learn how many of your 2 alive neighbors are evil.",
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
+                if (player.isDrunk) {
+                    player.info = {
+                        text: `<h1>${randomInt(0, 2)}</h1>`
+                    }
+                    return
+                }
+
                 const neighbors = [game.getPreviousAlivePlayer(me), game.getNextAlivePlayer(me)]
                 if (neighbors[0] == null || neighbors[1] == null) {
                     return
@@ -369,7 +392,7 @@ export const getRoles = () => {
             "difficulty": BAD_MOON_RISING,
             "effect": "The 1st time you die, you dont.",
             onDeath(source, me) {
-                if (me.didUsePower) {
+                if (me.didUsePower || me.isDrunk) {
                     return true
                 } else {
                     me.didUsePower = false
@@ -401,6 +424,7 @@ export const getRoles = () => {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
             "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
+            infoDuration: 'onNightEnd',
             onSetup: function(game, player) {
                 const townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
                 if (townsfolks.length == 0) {
@@ -411,6 +435,15 @@ export const getRoles = () => {
                 }
 
                 const randomTownsfolk = randomOf(...townsfolks)
+
+                player.info = {
+                    roles: [randomTownsfolk.role?.name],
+                    text: 'This is your grandson.'
+                }
+
+                if (player.isDrunk) {
+                    return
+                }
 
                 randomTownsfolk.statusEffects.push({
                     name: 'Grandson',
@@ -456,7 +489,10 @@ export const getRoles = () => {
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Minion.",
             onSetup: function(game, player) {
-                const randomMinion = randomOf(...game.getMinions())
+                let randomMinion = randomOf(...game.getMinions())
+                if (player.isDrunk) {
+                    randomMinion = randomOf(...game.getPlayersExcept([player.name]))
+                }
 
                 if (randomMinion == null) {
                     player.info = { text: 'There are no minions in this game.' }
@@ -497,7 +533,10 @@ export const getRoles = () => {
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
             onSetup: function(game, player) {
-                const randomOutsider = randomOf(...game.getOutsiders())
+                let randomOutsider = randomOf(...game.getOutsiders())
+                if (player.isDrunk) {
+                    randomOutsider = randomOf(...game.getPlayersExcept([player.name]))
+                }
 
                 if (randomOutsider == null) {
                     player.info = { text: 'There are no Outsiders in this game.' }
@@ -568,6 +607,9 @@ export const getRoles = () => {
                 if (me?.availableAction == null) {  // Prevent multiple requests
                     return
                 }
+                if (me.isDrunk) {
+                    return
+                }
                 console.log(`Doing plaer action upon ${actionData}`)
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 chosenPlayer.statusEffects.push({
@@ -581,7 +623,6 @@ export const getRoles = () => {
                         return true
                     }
                 })
-                me.availableAction = null
             }
         },
         {
@@ -674,7 +715,10 @@ export const getRoles = () => {
             "name": "Soldier",
             "difficulty": TROUBLE_BREWING,
             "effect": "You are safe from the Demon.",
-            onDeath(source) {
+            onDeath(source, me) {
+                if (me.isDrunk) {
+                    return true
+                }
                 if (source.type == SourceOfDeathTypes.DEMON_KILL) {
                     return false
                 }
@@ -702,6 +746,20 @@ export const getRoles = () => {
             "effect": "Each night*, you learn which character died by execution today.",
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
+                if (me.isDrunk) {
+                    const getRandomRole = () => randomOf(...game.scriptRoleNames.filter(rn => rn != me.role?.name && rn != 'Drunk'))
+                    // For more interesting options
+                    const rolesNotUsed = game.getRolesNotInGame()
+                    const possibleRoles = percentChance(50)? rolesNotUsed: [...rolesNotUsed, ...game.getRolesInGame()]
+                    const rolesToPick = possibleRoles.filter(r => r.name != me.role.name)
+                    const randomRoleName = randomOf(...rolesToPick).name
+
+                    me.info = {
+                        roles: [randomRoleName]
+                    }
+                    return
+                }
+
                 const lastExecutedPlayer = game.getLastExecutedPlayer()
                 if (lastExecutedPlayer == null) {
                     return
@@ -732,7 +790,10 @@ export const getRoles = () => {
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Townsfolk.",
             onSetup: function(game, player) {
-                const randomTF = randomOf(...game.getNonOutsiderTownsfolk().filter(p => p.name != player.name))
+                let randomTF = randomOf(...game.getNonOutsiderTownsfolk().filter(p => p.name != player.name))
+                if (player.isDrunk) {
+                    randomTF = randomOf(...game.getPlayersExcept([player.name]))
+                }
 
                 if (randomTF == null) {
                     player.info = { text: 'There are no townsfolk in this game.' }
@@ -784,7 +845,14 @@ export const getRoles = () => {
             "effect": "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.",
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
-            isOutsider: true
+            isOutsider: true,
+            onAssignRole(game, me) {
+                const rolesNotUsed = game.getRolesNotInGame()
+                const goodRolesNotInGame = rolesNotUsed.filter(r => !r.isEvil)
+                const myNewRole = randomOf(...goodRolesNotInGame)
+                me.role = myNewRole
+                me.isDrunk = true
+            }
         },
         {
             "name": "Golem",
@@ -1345,31 +1413,11 @@ export const getRoles = () => {
     return roles
 }
 
-export const getRoles_OLD = () => {
-    const roles = []
-    return sortRolesNormal(roles)
-}
-
-export function getLocations() {
-    return []
-}
-
-export function getLocationCards() {
-    const cards = []
-    return cards
-}
-
 export function getRolesByDifficulty(difficulty) {
     return getRoles().filter(role => role.difficulty <= difficulty)
 }
 export function getRolesForDifficulty(difficulty) {
     return getRoles().filter(role => role.difficulty == difficulty)
-}
-export function getTestRoles() {
-    return getRoles().filter(role => randomOf(true, false)).map(role => ({
-        ...role,
-        isInGame: randomOf(true, false)
-    }))
 }
 export function getSectionFilters() {
     const allRoles = getRoles()
@@ -1393,14 +1441,8 @@ export function getAllRoleDifficulties() {
 }
 
 export function printRolesByDifficulty() {
-    const roles = getRoles()
-    console.log({roles})
-    console.log({rolesBAD_MOON_RISING: roles.filter(role => role.difficulty == BAD_MOON_RISING)})
-    console.log({rolesINTERMEDIATE: roles.filter(role => role.difficulty == INTERMEDIATE)})
-    console.log({rolesADVANCED: roles.filter(role => role.difficulty == ADVANCED)})
-    console.log({rolesCOMPLETE: roles.filter(role => role.difficulty == COMPLETE)})
+    throw `Not implemented`
 }
-// printRolesByDifficulty()
 
 export function sortRolesNormal(roles) {
     const getRoleSortValue = role => 
@@ -1423,44 +1465,6 @@ export function sortRolesNormal(roles) {
     rolesSorted.sort((a, b) => getRoleSortValue(a) - getRoleSortValue(b))
     return rolesSorted
 }
-
-// export function sortRolesNormal(roles) {
-//     const rolePriorityByTypeOrName = [
-//         WEREWOLVES,
-//         REGULAR_NEGATIVE,
-//         EVIL_SETUP,
-//         SPECIAL_SETUP,
-//         SETUP,
-//         'Bell Ringer',
-//         'Archaeologist',
-//         NIGHTLY,
-//         SPECIAL_NIGHTLY,
-//         REGULAR,
-//         OTHER_CATEGORY
-//     ]
-//     const rolesByCategory = groupArrayBy(roles, role => role.category)
-//     function sortArrayByWorthDescending(arr) {
-//         const getWorth = elem => elem.worth != null? elem.worth: 1
-//         return arr.sort((a,b) => getWorth(a) - getWorth(b))
-//     }
-    
-//     const rolesAlphabetically = [...roles].sort((a, b) => a.name.localeCompare(b.name))
-//     const rolesAndByWorth = sortArrayByWorthDescending([...rolesAlphabetically])
-//     const getRolePriority = role => 
-//     rolePriorityByTypeOrName.indexOf(role.name) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.name):
-//     rolePriorityByTypeOrName.indexOf(role.team) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.team):
-//     rolePriorityByTypeOrName.indexOf(role.category) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.category):
-//         9999
-//     if (browser) {
-//         window.getRolePriority = getRolePriority
-//     }
-//     const rolesAndByCategory = [...rolesAndByWorth].sort((a, b) => getRolePriority(a) - getRolePriority(b))
-
-//     return rolesAndByCategory
-// }
 
 export const NO_PRIORITY = 99
 const setupOrder = [
@@ -1518,9 +1522,6 @@ export function getSetupRolePriority(roleOrRoleName) {
         return NO_PRIORITY
     }
     let roleName = roleOrRoleName.name != null? roleOrRoleName.name : roleOrRoleName
-    if (roleName == 'Rival A' || roleName == 'Rival B') {
-        roleName = 'Rival'
-    }
     const index = setupOrder.indexOf(roleName)
     if (index == -1) {
         return NO_PRIORITY
@@ -1626,12 +1627,6 @@ export function getNightlyRolePriority(roleOrRoleName) {
         return NO_PRIORITY
     }
     let roleName = roleOrRoleName.name != null? roleOrRoleName.name : roleOrRoleName
-    if (roleName == 'Mora') {
-        roleName = 'Strigoy'
-    }
-    if (roleName == 'Hazer' || roleName == 'Silencer') {
-        roleName = 'Secondary Strigoy'
-    }
     const index = nightlyOrder.indexOf(roleName)
     if (index == -1) {
         return NO_PRIORITY
@@ -1658,119 +1653,23 @@ export function getRole(name) {
 export function getRoleByI(i) {
     return getRoles().find(role => role.i == i)
 }
-export function getEvent(name) {
-    return getLocationCards().find(card => card.name == name)
+
+export function getRoleNumbersByPlayers(nPlayers) {
+    const roleNumbersTable = {
+        /* Townsfolk    Outsiders Minions    Demons */
+        5: [3,          0,        1,          1],
+        6: [3,          1,        1,          1],
+        7: [5,          0,        1,          1],
+        8: [5,          1,        1,          1],
+        9: [5,          2,        1,          1],
+       10: [7,          0,        2,          1],
+       11: [7,          1,        2,          1],
+       12: [7,          2,        2,          1],
+       13: [9,          0,        3,          1],
+       14: [9,          1,        3,          1],
+       15: [9,          2,        3,          1],
+    }
+
+    const [nTownsfolk, nOutsiders, nMinions, nDemons] = roleNumbersTable[nPlayers]
+    return { nTownsfolk, nOutsiders, nMinions, nDemons }
 }
-
-
-export function setupRoles(nPlayers, difficulty) {
-    const baseGoodRoles = getRoles().filter(role => role.difficulty <= difficulty && role.team != WEREWOLVES)
-    while (baseGoodRoles.length < nPlayers) {   // Pad with Peasants
-        baseGoodRoles.push(getRole('Peasant'))
-    }
-    times(10, () => {
-        baseGoodRoles.push(getRole('Peasant'))       // Add 3 extra Peasants
-    })
-
-    const goodRoles = randomizeArray(baseGoodRoles) 
-    const evilRoles = randomizeArray(getRoles().filter(role => role.difficulty <= difficulty && role.team == WEREWOLVES && role.isWerewolf != true))
-
-    const rolesSoFar = []
-
-    // First, correctly add enough werewolves and evil roles, judging by the evilsByPlayers table
-    const evilsThisGame = randomOf(...evilsByPlayers[nPlayers])
-    const nWerewolvesThisGame = evilsThisGame.filter(roleName => roleName == STRIGOY).length
-    const nNonWerewolfEvilsThisGame = evilsThisGame.length - nWerewolvesThisGame
-    while (evilRoles.length < nNonWerewolfEvilsThisGame) {
-        evilRoles.push(getRole('Cultist'))
-    }
-    
-    times(nWerewolvesThisGame, () => {
-        rolesSoFar.push(getRole('Strigoy'))
-    })
-    times(nNonWerewolfEvilsThisGame, () => {
-        rolesSoFar.push(evilRoles.pop())
-    })
-    
-    // Fix yaga
-    const getWorthBalanceSoFar = () => sum(rolesSoFar.map(role => role.worth))
-    const yaga = rolesSoFar.find(role => role.name.includes('Yaga'))
-    const isYagaInGame = yaga != null
-    if (isYagaInGame) {
-        popArrayElementFind(baseGoodRoles, role => role.name == yaga.yagaRole)
-    }
-
-
-    // Second, add townsfolk
-    while (rolesSoFar.length < nPlayers) {
-        rolesSoFar.push(goodRoles.pop())
-    }
-
-    // Third, balance it
-    let nIterations = 0
-    function popTownsfolkMatchingCondition(conditionRoleToBool) {
-        const townsfolksMatching = rolesSoFar.filter(role => role.team != WEREWOLVES && conditionRoleToBool(role))
-        if (townsfolksMatching.length == 0)
-            return null
-        const chosenTownsfolk = randomOf(...townsfolksMatching)
-        return popArrayElementFind(rolesSoFar, role => role.name == chosenTownsfolk.name)
-    }
-    function moveGoodTownsfolkMatchingConditionToRolesSoFar(conditionRoleToBool) {
-        const unusedTownsfolks = goodRoles.filter(conditionRoleToBool)
-        if (unusedTownsfolks.length == 0)
-            return null
-        const chosenNewTownsfolk = randomOf(...unusedTownsfolks)
-        const roleFound = popArrayElementFind(goodRoles, role => role.name == chosenNewTownsfolk.name)
-        rolesSoFar.push(chosenNewTownsfolk)
-        return roleFound
-    }
-    function replaceWeakTownsfolkWithStronger() {
-        let removedTownsfolk = popTownsfolkMatchingCondition(role => role.name == 'Peasant')
-        if (removedTownsfolk == null) {
-            removedTownsfolk = popTownsfolkMatchingCondition(role => role.worth <= 1)
-        }
-        if (removedTownsfolk == null)
-            removedTownsfolk = popTownsfolkMatchingCondition(role => true)  // Pop any townsfolk
-        const pushedTownsfolk = moveGoodTownsfolkMatchingConditionToRolesSoFar(role => role.worth >= removedTownsfolk.worth)
-        if (pushedTownsfolk == null) {
-            rolesSoFar.push(removedTownsfolk)   // Put it back
-        } else {
-        }
-    }
-    function replaceStrongTownsfolkWithWeaker() {
-        let removedTownsfolk = popTownsfolkMatchingCondition(role => role.worth >= 1)
-        if (removedTownsfolk == null)
-            removedTownsfolk = popTownsfolkMatchingCondition(role => true)  // Pop any townsfolk
-        const pushedTownsfolk = moveGoodTownsfolkMatchingConditionToRolesSoFar(role => role.worth <= removedTownsfolk.worth)
-        if (pushedTownsfolk == null) {
-            rolesSoFar.push(removedTownsfolk)   // Put it back
-        } else {
-
-        }
-    }
-    
-    const maxIterations = 20
-    while (!isWorthBalanceAcceptable(getWorthBalanceSoFar()) && nIterations < maxIterations) {
-        const areTownsfolkTooWeak = getWorthBalanceSoFar() < 0
-        if (areTownsfolkTooWeak) {
-            replaceWeakTownsfolkWithStronger()
-        } else {
-            replaceStrongTownsfolkWithWeaker()
-        }
-        randomizeArray(rolesSoFar)
-        nIterations++
-    }
-    
-    console.log(`For ${nPlayers} people, difficulty ${difficulty}, worth balance is: ${getWorthBalanceSoFar()} (did ${nIterations} iterations)`)
-    console.log(rolesSoFar)
-
-    // Fourth, rectifications
-    const minimumAcceptableImportantRoles = Math.floor(nPlayers / 7)
-    const importantRolesSoFar = rolesSoFar.filter(role => role.isImportant)
-    if (importantRolesSoFar.length < minimumAcceptableImportantRoles) {
-        return setupRoles(nPlayers, difficulty)
-    }
-
-    return rolesSoFar
-}
-

@@ -74,3 +74,22 @@ export function swapElementsAt(arr, i1, i2) {
     arr[i2] = temp
     return true
 }
+export function popArrayElementFind(arr, findFunc) {
+    const index = arr.findIndex(findFunc)
+    if (index == -1) {
+        return null
+    }
+    const elem = arr[index]
+    arr.splice(index, 1)
+    return elem
+}
+export function repeat(times, func) {
+    for (let i = 0; i < times; i++) {
+        func(i)
+    }
+}
+export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to return true; */
+    var c = randomInt(1, 100);
+    if(c <= chance) return true;
+    return false;
+}

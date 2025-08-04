@@ -511,16 +511,17 @@
                     isDead={player.isDead}
                 >
                     <div class="flex-content wrap margin-top-1">
-                        <div>
+                        <div class="flex-row gap-1">
                             <button class="btn blue" on:click={() => movePlayer(player.name, 'up')}>Move Up</button>
                             <button class="btn blue" on:click={() => movePlayer(player.name, 'down')}>Move Down</button>
                         </div>
-                        <button class="btn red" on:click={() => killPlayer(player.name)}>
-                            <img class="icon" src="/images/status/Dead.png"/> Execute
-                            <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
-                        </button>
-                        <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
-                        
+                        <div class="flex-row gap-1">
+                            <button class="btn red" on:click={() => killPlayer(player.name)}>
+                                <img class="icon" src="/images/status/Dead.png"/> Execute
+                                <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
+                            </button>
+                            <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
+                        </div>
                     </div>
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}

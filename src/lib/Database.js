@@ -5,7 +5,7 @@ import { GamePhases } from "$lib/shared-lib/GamePhases"
 
 function makeTestGame() {}  // For compatibility
 
-export const WEREWOLVES = 'werewolves'
+export const EVILS = 'evils'
 export const TOWNSFOLK = 'townsfolk'
 export const OTHER = 'other'
 
@@ -64,7 +64,7 @@ export const EVIL_SETUP = 'evil-setup'
 export const SPECIAL_NIGHTLY = 'special-nightly'
 export const OTHER_CATEGORY = 'other-category'
 
-export const NIGHTLY_WEREWOLVES = 'nightly-werewolves'
+export const NIGHTLY_EVILS = 'nightly-evils'
 
 export const EVIL_COLOR = 'rgb(194, 5, 30)'
 export const SETUP_COLOR = 'rgb(90, 138, 0)'
@@ -1237,26 +1237,12 @@ export const getRoles_OLD = () => {
     return sortRolesNormal(roles)
 }
 
-export function getLocations() {
-    return []
-}
-
-export function getLocationCards() {
-    const cards = []
-    return cards
-}
 
 export function getRolesByDifficulty(difficulty) {
     return getRoles().filter(role => role.difficulty <= difficulty)
 }
 export function getRolesForDifficulty(difficulty) {
     return getRoles().filter(role => role.difficulty == difficulty)
-}
-export function getTestRoles() {
-    return getRoles().filter(role => randomOf(true, false)).map(role => ({
-        ...role,
-        isInGame: randomOf(true, false)
-    }))
 }
 export function getSectionFilters() {
     const allRoles = getRoles()
@@ -1280,12 +1266,7 @@ export function getAllRoleDifficulties() {
 }
 
 export function printRolesByDifficulty() {
-    const roles = getRoles()
-    console.log({roles})
-    console.log({rolesBAD_MOON_RISING: roles.filter(role => role.difficulty == BAD_MOON_RISING)})
-    console.log({rolesINTERMEDIATE: roles.filter(role => role.difficulty == INTERMEDIATE)})
-    console.log({rolesADVANCED: roles.filter(role => role.difficulty == ADVANCED)})
-    console.log({rolesCOMPLETE: roles.filter(role => role.difficulty == COMPLETE)})
+    throw `Not implemented.`
 }
 // printRolesByDifficulty()
 
@@ -1293,9 +1274,9 @@ export function sortRolesNormal(roles) {
     const getRoleSortValue = role => 
         role.isDemon?
             99
-        :role.ribbonText == 'EVIL'?
+        :role.isEvil?
             98
-        :role.ribbonText == 'OUTSIDER'?
+        :role.isOutsider?
             10
         :role.effect.toLowerCase().includes('you start')?
             1
@@ -1311,43 +1292,6 @@ export function sortRolesNormal(roles) {
     return rolesSorted
 }
 
-// export function sortRolesNormal(roles) {
-//     const rolePriorityByTypeOrName = [
-//         WEREWOLVES,
-//         REGULAR_NEGATIVE,
-//         EVIL_SETUP,
-//         SPECIAL_SETUP,
-//         SETUP,
-//         'Bell Ringer',
-//         'Archaeologist',
-//         NIGHTLY,
-//         SPECIAL_NIGHTLY,
-//         REGULAR,
-//         OTHER_CATEGORY
-//     ]
-//     const rolesByCategory = groupArrayBy(roles, role => role.category)
-//     function sortArrayByWorthDescending(arr) {
-//         const getWorth = elem => elem.worth != null? elem.worth: 1
-//         return arr.sort((a,b) => getWorth(a) - getWorth(b))
-//     }
-    
-//     const rolesAlphabetically = [...roles].sort((a, b) => a.name.localeCompare(b.name))
-//     const rolesAndByWorth = sortArrayByWorthDescending([...rolesAlphabetically])
-//     const getRolePriority = role => 
-//     rolePriorityByTypeOrName.indexOf(role.name) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.name):
-//     rolePriorityByTypeOrName.indexOf(role.team) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.team):
-//     rolePriorityByTypeOrName.indexOf(role.category) != -1?
-//         rolePriorityByTypeOrName.indexOf(role.category):
-//         9999
-//     if (browser) {
-//         window.getRolePriority = getRolePriority
-//     }
-//     const rolesAndByCategory = [...rolesAndByWorth].sort((a, b) => getRolePriority(a) - getRolePriority(b))
-
-//     return rolesAndByCategory
-// }
 
 export const NO_PRIORITY = 99
 const setupOrder = [
@@ -1551,7 +1495,7 @@ export function getEvent(name) {
 
 
 export function setupRoles(nPlayers, difficulty) {
-    const baseGoodRoles = getRoles().filter(role => role.difficulty <= difficulty && role.team != WEREWOLVES)
+    const baseGoodRoles = getRoles().filter(role => role.difficulty <= difficulty && role.team != EVILS)
     while (baseGoodRoles.length < nPlayers) {   // Pad with Peasants
         baseGoodRoles.push(getRole('Peasant'))
     }
@@ -1560,11 +1504,11 @@ export function setupRoles(nPlayers, difficulty) {
     })
 
     const goodRoles = randomizeArray(baseGoodRoles) 
-    const evilRoles = randomizeArray(getRoles().filter(role => role.difficulty <= difficulty && role.team == WEREWOLVES && role.isWerewolf != true))
+    const evilRoles = randomizeArray(getRoles().filter(role => role.difficulty <= difficulty && role.team == EVILS && role.isWerewolf != true))
 
     const rolesSoFar = []
 
-    // First, correctly add enough werewolves and evil roles, judging by the evilsByPlayers table
+    // First, correctly add enough evils and evil roles, judging by the evilsByPlayers table
     const evilsThisGame = randomOf(...evilsByPlayers[nPlayers])
     const nWerewolvesThisGame = evilsThisGame.filter(roleName => roleName == STRIGOY).length
     const nNonWerewolfEvilsThisGame = evilsThisGame.length - nWerewolvesThisGame
@@ -1596,7 +1540,7 @@ export function setupRoles(nPlayers, difficulty) {
     // Third, balance it
     let nIterations = 0
     function popTownsfolkMatchingCondition(conditionRoleToBool) {
-        const townsfolksMatching = rolesSoFar.filter(role => role.team != WEREWOLVES && conditionRoleToBool(role))
+        const townsfolksMatching = rolesSoFar.filter(role => role.team != EVILS && conditionRoleToBool(role))
         if (townsfolksMatching.length == 0)
             return null
         const chosenTownsfolk = randomOf(...townsfolksMatching)
