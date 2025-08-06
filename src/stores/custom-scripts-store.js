@@ -20,10 +20,13 @@ const DEFAULT_SCRIPTS = {
         'Soldier',
         'Virgo',
 
+        'Saint',
         'Drunk',
         'Moonchild',
         'Mutant',
 
+        'Scarlet Woman',
+        'Baron',
         'Intoxist', // Not implemented
         'Assassin', // Not tested
         'Spy',

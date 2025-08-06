@@ -290,7 +290,7 @@ export const getRoles = () => {
                     return
                 }
 
-                if (me.isDrunk) {
+                if (me.isDrunkOrPoisoned()) {
                     const scriptRoles = game.getScriptRoleObjects()
                     const scriptEvils = scriptRoles.filter(r => r.isEvil)
                     const scriptNonEvils = scriptRoles.filter(r => !r.isEvil && r.name != me.role.name)
@@ -879,7 +879,7 @@ export const getRoles = () => {
             isOutsider: true,
             onAssignRole(game, me) {
                 const rolesNotUsed = game.getRolesNotInGame()
-                const goodRolesNotInGame = rolesNotUsed.filter(r => !r.isEvil)
+                const goodRolesNotInGame = rolesNotUsed.filter(r => !r.isEvil && !r.isOutsider)
                 const myNewRole = randomOf(...goodRolesNotInGame)
                 me.role = myNewRole
                 me.isDrunk = true
@@ -1021,7 +1021,12 @@ export const getRoles = () => {
             "effect": "If you die by execution, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
-            isOutsider: true
+            isOutsider: true,
+            afterDeath(source, me, game) {
+                if (source.type != SourceOfDeathTypes.EXECUTION) {
+                    game.winner = 'Evil'
+                }
+            }
         },
         {
             "name": "Snitch",
@@ -1101,6 +1106,21 @@ export const getRoles = () => {
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            afterAssignRole(game, me) {
+                const outsidersNotUsed = randomizeArray(
+                    game.getRolesNotInGame().filter(r => r.isOutsider)
+                )
+                if (outsidersNotUsed.length < 2) {
+                    return
+                }
+                const goodPlayers = randomizeArray(game.getNonOutsiderTownsfolk())
+                if (goodPlayers.length < 2) {
+                    return
+                }
+
+                goodPlayers[0].role = outsidersNotUsed[0]
+                goodPlayers[1].role = outsidersNotUsed[1]
+            }
         },
         {
             "name": "boffin",
@@ -1226,10 +1246,51 @@ export const getRoles = () => {
         {
             "name": "Intoxist",
             "difficulty": CUSTOM_TEST,
-            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough) and tomorrow day. In the morning, know if your poison did anything to them.",
+            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough) and tomorrow day. Next night, know if your poison did anything to them.",
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            infoDuration: 'onNightEnd',
+            actionDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+                if (game.roundNumber == 1) {
+                    return
+                }
+                if (me.chosenPlayerName != null) {
+                    const chosenPlayer = game.getPlayer(me.chosenPlayerName)
+                    const lastPoisonEffect = chosenPlayer.getLastPoisonEffect()
+                    console.log(me.chosenPlayerName)
+                    console.log(lastPoisonEffect)
+                    console.log(game.roundNumber)
+                    if (lastPoisonEffect?.roundNumber == game.roundNumber - 1) {
+                        me.info = {
+                            roles: [],
+                            type: InfoTypes.ROLES,
+                            text: 'Yes'
+                        }
+                    } else {
+                        me.info = {
+                            type: InfoTypes.ROLES,
+                            text: 'No'
+                        }
+                    }
+                }
+            },
+            onPlayerAction(game, me, actionData) {
+                me.chosenPlayerName = null
+                if (me.isDrunkOrPoisoned()) {
+                    return
+                }
+                const chosenPlayer = game.getPlayer(actionData)
+                chosenPlayer?.poison('Intoxicated')
+                me.chosenPlayerName = chosenPlayer?.name
+            },
+            onDayStart(game, me) {
+                
+            }
         },
         {
             "name": "Psychopath",
@@ -1246,6 +1307,31 @@ export const getRoles = () => {
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            infoDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                if (me.didUsePower) {
+                    return
+                }
+                me.didUsePower = true
+                const demon = game.playersInRoom.find(p => p?.role?.isDemon)
+                if (demon == null) {
+                    me.info = {
+                        type: InfoTypes.ROLES,
+                        roles: [],
+                        text: 'There was an error finding the demon.'
+                    }
+                    return
+                }
+                demon.addStatus({
+                    name: 'Scarlet Woman Death',
+                    onDeath(source, demonMe, game) {
+                        if (!me.isDead && game.getAlivePlayers()?.length >= 5) {
+                            me.role = demonMe.role
+                        }
+                        return true
+                    }
+                })
+            }
         },
         {
             "name": "Spy",
@@ -1335,9 +1421,11 @@ export const getRoles = () => {
             isEvil: true,
             infoDuration: 'onNightEnd',
             onSetup(game, player) {
-                const townsfolkNotInGame = game.getRolesNotInGame()
-                    .filter(r => !r.isEvil)
-                    .map(r => r.name)
+                const townsfolkNotInGame = randomizeArray(
+                    game.getRolesNotInGame()
+                        .filter(r => !r.isEvil)
+                        .map(r => r.name)
+                    ).slice(0, 3)
                 player.info = {
                     roles: townsfolkNotInGame,
                     showsRoleDescriptions: true,
@@ -1735,8 +1823,11 @@ export function getRoleByI(i) {
 }
 
 export function getRoleNumbersByPlayers(nPlayers) {
+    console.log(nPlayers)
     const roleNumbersTable = {
         /* Townsfolk    Outsiders Minions    Demons */
+        3: [2,          0,        0,          1],
+        4: [3,          0,        0,          1],
         5: [3,          0,        1,          1],
         6: [3,          1,        1,          1],
         7: [5,          0,        1,          1],
