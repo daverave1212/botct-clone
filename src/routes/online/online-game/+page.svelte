@@ -60,6 +60,7 @@
 
     $: didEvilsWin = winner != null && winner.toLowerCase().startsWith('evil')
     $: didTownsfolkWin = winner != null && !didEvilsWin
+    $: amIAdmin = $me.name == gameOwnerName
 
     let showToaster = () => {}
 
@@ -516,19 +517,21 @@
                     src={player.src}
                     isDead={player.isDead}
                 >
-                    <div class="flex-content wrap margin-top-1">
-                        <div class="flex-row gap-1">
-                            <button class="btn blue" on:click={() => movePlayer(player.name, 'up')}>Move Up</button>
-                            <button class="btn blue" on:click={() => movePlayer(player.name, 'down')}>Move Down</button>
+                    {#if amIAdmin}
+                        <div class="flex-content wrap margin-top-1">
+                            <div class="flex-row gap-1">
+                                <button class="btn blue" on:click={() => movePlayer(player.name, 'up')}>Move Up</button>
+                                <button class="btn blue" on:click={() => movePlayer(player.name, 'down')}>Move Down</button>
+                            </div>
+                            <div class="flex-row gap-1">
+                                <button class="btn red" on:click={() => killPlayer(player.name)}>
+                                    <img class="icon" src="/images/status/Dead.png"/> Execute
+                                    <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
+                                </button>
+                                <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
+                            </div>
                         </div>
-                        <div class="flex-row gap-1">
-                            <button class="btn red" on:click={() => killPlayer(player.name)}>
-                                <img class="icon" src="/images/status/Dead.png"/> Execute
-                                <!-- {$playersInRoom[i]?.isDead? 'Revive': 'Kill'} -->
-                            </button>
-                            <button class="btn gray" on:click={() => kickPlayer(player.name)}>Kick</button>
-                        </div>
-                    </div>
+                    {/if}
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
                     <button class="btn blue glow-blink" style="--blink-color: var(--blue-color)" on:click={() => {
@@ -551,7 +554,7 @@
 
         {/each}
 
-        {#if $me.name == gameOwnerName}
+        {#if amIAdmin}
             <button class="btn blue" on:click={startGame} style="position: relative;">
                 Start Game
             </button>
@@ -566,11 +569,11 @@
             </div>
         {/if}
 
-        <button class="btn colorful" on:click={() => {
+        <!-- <button class="btn colorful" on:click={() => {
             showToaster('success', 'This is a little error')
         }} style="position: relative;">
             Test Toaster
-        </button>
+        </button> -->
 
 
         <h3 class="center-text margin-top-1">To restart the game, open the menu and hit Play. All players are saved.</h3>

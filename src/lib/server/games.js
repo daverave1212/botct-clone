@@ -3,7 +3,7 @@ import { roomCode } from "../../stores/online/local/room"
 import { InfoTypes } from "$lib/shared-lib/GamePhases"
 import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "$lib/shared-lib/SharedDatabase"
 import { createRandomCode, popArrayElementFind, randomizeArray, swapElementsAt } from "./utils"
-const IS_DEBUG = true
+const IS_DEBUG = false
 
 
 function generateRandomRoomCode() {
@@ -51,10 +51,11 @@ const PLAYER_DEFAULT = {
     statusEffects: []
 }
 class Player {
-    constructor({ name, src, privateKey }) {
+    constructor({ name, src, privateKey }, roomCode) {
         this.name = name
         this.src = src
         this.privateKey = privateKey
+        this.roomCode = roomCode
 
         this.role = null
         this.isDrunk = false
@@ -67,6 +68,8 @@ class Player {
         this.availableAction = null
 
         this.statusEffects = []
+
+        this.poisonEffectHistory = []
     }
 
     isEvil() {
@@ -78,12 +81,35 @@ class Player {
     }
 
     isDrunkOrPoisoned() {
-        return this.isPoisoned || this.statusEffects.find(se => se.isPoisoned) != null
+        const poisonStatus = this.statusEffects.find(se => se.isPoisoned)
+        const amI = this.isPoisoned || poisonStatus != null
+        if (amI) {
+            this.poisonEffectHistory.push({
+                roundNumber: getGame(this.roomCode)?.roundNumber,
+                name: poisonStatus.name
+            })
+        }
+        return amI
+    }
+
+    getLastPoisonEffect() {
+        return this.poisonEffectHistory[this.poisonEffectHistory.length - 1]
     }
 
     removeStatus(statusEffectName) {
         this.statusEffects = this.statusEffects.filter(s => s.name != statusEffectName)
     }
+
+    poison(statusName='Poisoned') {
+        this.statusEffects.push({
+            name: statusName,
+            isPoisoned: true,
+            onDayEnd(game, me) {
+                me.removeStatus(statusName)
+            }
+        })
+    }
+
 
     addStatus(obj) {
         this.statusEffects.push(obj)
@@ -110,6 +136,7 @@ class Game {
     countdownDuration
 
     killHistory
+    roundNumber
 
     winner
 
@@ -126,6 +153,8 @@ class Game {
         this.phase = GamePhases.NOT_STARTED
 
         this.killHistory = []
+
+        this.roundNumber = 0
     }
 
     sendNotification(type, text) {
@@ -137,12 +166,12 @@ class Game {
 
     goToNightThenDayAsync() {
         this.startNight()
-        this.doAfterCountdown(12000, () => {
+        this.doAfterCountdown(30 * 1000, () => {
             this.startDay()
         })
     }
     startNight() {
-        // console.log(`🌙 Starting night`)
+        this.roundNumber += 1
         this.#applyAllEventsAt('onDayEnd')
         this.phase = GamePhases.NIGHT
         this.#applyAllEventsAt('onNightStart')
@@ -155,7 +184,26 @@ class Game {
         this.phase = GamePhases.DAY
         this.#applyAllEventsAt('onDayStart')
     }
+    #applyPlayerDeathEventsAt(player, eventName, source) {
+        for (const statusEffect of player.statusEffects) {
+            if (statusEffect[eventName] != null) {
+                const shouldContinue = statusEffect[eventName](source, player, this)
+                if (shouldContinue == false) {  // true or null should both continue
+                    return false
+                }
+            }
+        }
 
+        // console.log(`Killing through role onDeath...`)
+        if (player?.role?.[eventName] != null) {
+            console.log(`Doing ${player.name} onDeath`)
+            const shouldContinue = player.role[eventName](source, player, this)
+            if (shouldContinue == false) {
+                return false
+            }
+        }
+        return true
+    }
     #applyAllEventsAt(eventName) {
         for (const player of this.playersInRoom) {
 
@@ -189,7 +237,7 @@ class Game {
         this.phase = GamePhases.COUNTDOWN
         this.assignRoles()
 
-        this.doAfterCountdown(4000, () => {
+        this.doAfterCountdown(10 * 1000, () => {
             this.doRolesSetup()
             this.goToNightThenDayAsync()
         })
@@ -201,7 +249,6 @@ class Game {
         }
 
         const rolesToAssign = randomizeArray(this.getRolesToAssign())
-        console.log({rolesToAssign})
         for (let i = 0; i < rolesToAssign.length; i++) {
             this.playersInRoom[i].role = rolesToAssign[i]
         }
@@ -209,9 +256,11 @@ class Game {
         this.#applyAllEventsAt('onAssignRole')
 
         if (IS_DEBUG) {
-            this.playersInRoom[0].role = getRole('Virgo')
-            this.playersInRoom[1].role = getRole('Imp')
+            this.playersInRoom[0].role = getRole('Imp')
+            this.playersInRoom[1].role = getRole('Scarlet Woman')
         }
+
+        this.#applyAllEventsAt('afterAssignRole')
     }
 
     getRolesToAssign() {
@@ -296,6 +345,9 @@ class Game {
     }
     getEvils() {
         return randomizeArray(this.playersInRoom.filter(p => p.isEvil()))
+    }
+    getAlivePlayers() {
+        return this.playersInRoom.filter(p => !p.isDead)
     }
     getAliveEvils() {
         return randomizeArray(this.playersInRoom.filter(p => p.isEvil() && !p.isDead))
@@ -382,6 +434,9 @@ class Game {
         return this.playersInRoom.map(p => p.isDrunk? getRole('Drunk'): p.role)
     }
     checkWinConditions() {
+        if (this.winner != null) {
+            return
+        }
         const demons = this.playersInRoom.filter(p => p.role?.isDemon)
         const areDemonsDead = demons.length == demons.filter(p => p.isDead).length
         const aliveEvils = this.getAliveEvils()
@@ -389,11 +444,11 @@ class Game {
 
 
         if (aliveEvils.length == 0 && aliveTownsfolk.length == 0) {
-            winner = 'Evil'
+            this.winner = 'Evil'
             return
         }
         if (aliveEvils.length > aliveTownsfolk.length) {
-            winner = 'Evil'
+            this.winner = 'Evil'
             return
         }
         if (areDemonsDead) {
@@ -420,23 +475,10 @@ class Game {
 
         const playerStatusEffects = [...player.statusEffects]
 
-        // console.log(`Killing through status effects...`)
-        for (const statusEffect of playerStatusEffects) {
-            if (statusEffect.onDeath != null) {
-                const shouldContinue = statusEffect.onDeath(source, player, this)
-                if (shouldContinue == false) {  // true or null should both continue
-                    return
-                }
-            }
-        }
-
-        // console.log(`Killing through role onDeath...`)
-        if (player?.role?.onDeath != null) {
-            console.log(`Doing ${player.name} onDeath`)
-            const shouldContinue = player.role.onDeath(source, player, this)
-            if (shouldContinue == false) {
-                return
-            }
+        const shouldContinue = this.#applyPlayerDeathEventsAt(player, 'onDeath', source)
+        
+        if (shouldContinue == false) {
+            return
         }
 
         // console.log(`${player.role?.name} Is dead!`)
@@ -445,6 +487,8 @@ class Game {
             playerName: player.name,
             source
         })
+
+        this.#applyPlayerDeathEventsAt(player, 'afterDeath', source)
 
         this.checkWinConditions()
     }
@@ -536,7 +580,7 @@ class Game {
                 const result = addPlayerToGameST(playerTemplate, this.roomCode)
                 // console.log(`Result: ${result}`)
             } else {
-                this.playersInRoom[playerIndex] = new Player(playerTemplate)
+                this.playersInRoom[playerIndex] = new Player(playerTemplate, this.roomCode)
             }
 
             console.log(`Getting player ${playerName} from players ${this.playersInRoom.map(p => p.name).join(', ')}`)
@@ -580,7 +624,7 @@ export function addPlayerToGameST(player, roomCode) {
         return 409
     }
 
-    const gamePlayer = new Player(player)
+    const gamePlayer = new Player(player, roomCode)
     game.addPlayer(gamePlayer)
     return 200
 }
