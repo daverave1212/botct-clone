@@ -15,7 +15,7 @@
     import Contact from "../../../components/Contact/Contact.svelte";
     import ContactList from "../../../components/ContactList.svelte";
     import DrawerPage from "../../../components-standalone/DrawerPage.svelte";
-    import { getRole, getRoles } from "../../../lib/Database";
+    import { getRole, getRoles } from "$lib/shared-lib/SharedDatabase";
     import Modal from "../../../components-standalone/Modal.svelte";
     import Tooltip from "../../../components-standalone/Tooltip.svelte";
     import { addPlayer, addPlayerAdded, addPlayerTemporary, getAddedPlayerRoleDifficulties, removePlaceholderRoles, removePlayer, setPlayerStateI } from "../../../stores/added-players-store";
@@ -53,6 +53,8 @@
     let roleBeingInspected = null
 
     let winner = null
+
+    let lastNotificationText = null
 
     let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
 
@@ -121,6 +123,11 @@
         if (game.winner != null) {
             console.log(`☑️ Winner not null! Setting winner to: ${game.winner}`)
             winner = game.winner
+        }
+
+        if (game.lastNotification?.text != lastNotificationText && game.lastNotification != null) {
+            lastNotificationText = game.lastNotification.text
+            showToaster('info', game.lastNotification.text)
         }
 
         gameOwnerName = game.ownerName
@@ -258,9 +265,7 @@
 
     async function killPlayer(name) {
         console.log('Killing player')
-        const rc = $roomCode
-        // await fetchOnlineGame('POST', `/api/game/${rc}/player/${playerI}/dead`)
-        await fetchOnlineGame('POST', `/api/game/${rc}/player/${name}/dead`)
+        await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${name}/dead`)
         await refresh()
     }
     async function movePlayer(name, upOrDown) {

@@ -8,7 +8,7 @@
     import RoleCard from "../../components/RoleCard.svelte";
     import RoleList from "../../components/RoleList.svelte";
     import RoleListWithRoles from "../../components/RoleListWithRoles.svelte";
-    import { ADVANCED, TROUBLE_BREWING, BAD_MOON_RISING, difficultyDescriptions, difficultyNames, getAllRoleDifficulties, getDifficultyByFirstLetter, getFirstLetterOfDifficulty, getLocationCards, getNormalRolePriority, getRoles, getRolesByDifficulty, getRolesForDifficulty, getSortRolesWithPriorityFunction, MORNING_COLOR, NIGHTLY_COLOR } from "../../lib/Database";
+    import { ADVANCED, TROUBLE_BREWING, BAD_MOON_RISING, difficultyDescriptions, difficultyNames, getAllRoleDifficulties, getDifficultyByFirstLetter, getFirstLetterOfDifficulty, getLocationCards, getNormalRolePriority, getRoles, getRolesByDifficulty, getRolesForDifficulty, getSortRolesWithPriorityFunction, MORNING_COLOR, NIGHTLY_COLOR } from "$lib/shared-lib/SharedDatabase";
     import { getMods } from "../../lib/ModsDatabase";
     import { browser } from '$app/environment'
 

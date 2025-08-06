@@ -5,7 +5,7 @@
     import RoleChooserManyDrawer from "../../components/RoleChooserManyDrawer.svelte";
     import RoleListWithRoles from "../../components/RoleListWithRoles.svelte";
     import { browser } from '$app/environment'
-    import { difficultyNames, getAllRoleDifficulties, getRole, getRoles, getSectionFilters, MORNING_COLOR, NIGHTLY, NIGHTLY_COLOR, sortRolesNormal } from "../../lib/Database";
+    import { difficultyNames, getAllRoleDifficulties, getRole, getRoles, getSectionFilters, MORNING_COLOR, NIGHTLY, NIGHTLY_COLOR, sortRolesNormal } from "$lib/shared-lib/SharedDatabase";
     import { getScriptFromURLSvelte, getUrlWithParams, showQR, stringToBase64QRCode } from "../../lib/svelteUtils";
     import { setCustomScript } from "../../stores/custom-scripts-store";
     import { page } from '$app/stores'

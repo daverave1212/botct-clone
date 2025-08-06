@@ -1,7 +1,7 @@
 import { get, writable } from 'svelte/store'
 import { getLocalStorageObject, localStorageWritable } from '../lib/svelteUtils'
 import { isNumber } from '../lib/utils'
-import { BAD_MOON_RISING, SECTS_AND_VIOLETS, TROUBLE_BREWING, getRoleByI, getRoles } from '../lib/Database'
+import { BAD_MOON_RISING, SECTS_AND_VIOLETS, TROUBLE_BREWING, getRoleByI, getRoles } from '$lib/shared-lib/SharedDatabase'
 
 const DEFAULT_SCRIPTS = {
     'Trouble Brewing': getRoles().filter(role => role.difficulty == TROUBLE_BREWING).map(role => role.name),
@@ -18,12 +18,13 @@ const DEFAULT_SCRIPTS = {
         'Undertaker',
         'Fool',
         'Soldier',
-        'Maiden',
+        'Virgo',
 
         'Drunk',
         'Moonchild',
         'Mutant',
 
+        'Intoxist', // Not implemented
         'Assassin', // Not tested
         'Spy',
 

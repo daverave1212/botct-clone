@@ -8,6 +8,7 @@
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
     import { roomCode, scriptName } from '../../../stores/online/local/room.js';
     import { getCustomScriptRoleNames, setCustomScript } from '../../../stores/custom-scripts-store.js';
+    import SafeButton from '../../../components-standalone/SafeButton.svelte';
 
 
     let isRoleChooserOpen = false
@@ -51,7 +52,7 @@
         // Fixes localStorage not finishing updating before we go to another page
         setTimeout(() => {
             goto('/online/online-game')
-        }, 1250)
+        }, 250)
     }
 
     async function onCreate() {
@@ -100,8 +101,10 @@
         </div>
         <input class="margin-top-2" placeholder="Name" on:click={onNameClick} value={$me.name} readonly/>
         <div class="flex-content center margin-top-2">
-            <button class="btn big colorful" on:click={onJoin} in:fly={{y: 100, delay: 100 }}>Join</button>
-            <button class="btn big colorful" on:click={onCreate} in:fly={{y: 100, delay: 150 }}>Create</button>
+            <SafeButton class="btn big colorful" timeout={500} on:click={onJoin}>Join</SafeButton>
+            <SafeButton class="btn big colorful" timeout={500} on:click={onCreate}>Create</SafeButton>
+            <!-- <button class="btn big colorful" on:click={onJoin} in:fly={{y: 100, delay: 100 }}>Join</button>
+            <button class="btn big colorful" on:click={onCreate} in:fly={{y: 100, delay: 150 }}>Create</button> -->
         </div>
 
 

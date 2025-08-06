@@ -1,6 +1,6 @@
 import { get, writable } from 'svelte/store'
 import { getLocalStorageObject, hasLocalStorageObject, localStorageWritable, setLocalStorageObject } from '../lib/svelteUtils'
-import { NO_PRIORITY, getNightlyRolePriority, getRole, getRoles, getSetupRolePriority } from '../lib/Database'
+import { NO_PRIORITY, getNightlyRolePriority, getRole, getRoles, getSetupRolePriority } from '$lib/shared-lib/SharedDatabase'
 
 export const addedPlayers = localStorageWritable('addedPlayers', [])
 

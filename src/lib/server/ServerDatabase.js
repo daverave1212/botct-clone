@@ -787,7 +787,7 @@ export const getRoles = () => {
             "effect": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately."
         },
         {
-            "name": "Maiden",
+            "name": "Virgo",
             "difficulty": CUSTOM_TEST,
             "effect": "The 1st time you would be executed, you don't die. If the nominator is a Townsfolk, they are executed instead."
         },

@@ -1,7 +1,7 @@
-import { arrayFindHighest, arrayFindIndexLowest, arrayFindLowest, groupArrayBy, percentChance, popArrayElementAt, popArrayElementFind, randomOf, randomizeArray, sum, times } from "./utils"
-import { browser } from '$app/environment'
+import { percentChance, randomOf, randomizeArray, test } from "$lib/shared-lib/shared-utils"
 import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
 import { GamePhases } from "$lib/shared-lib/GamePhases"
+import { randomInt } from "$lib/shared-lib/shared-utils"
 import { InfoTypes } from "$lib/shared-lib/GamePhases"
 
 export const EVILS = 'evils'
@@ -15,7 +15,6 @@ export const SECTS_AND_VIOLETS = 1.5
 export const INTERMEDIATE = 2
 export const EXPERIMENTAL = 2.25
 export const ADVANCED = 9
-
 
 export const COMPLETE = -124172
 
@@ -216,8 +215,8 @@ export const getRoles = () => {
                     text: `<h1>${answer}</h1>`
                 }
             },
-            test() {
-                const game = makeTestGame()
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestGame()
                 game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp'])
                 const player = game.getPlayerAt(1)
                 
@@ -328,8 +327,8 @@ export const getRoles = () => {
                     text: `${evilNeighbors.length}`
                 }
             },
-            test() {
-                const game = makeTestGame()
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestGame()
                 const player = game.getPlayerAt(1)
                 
                 game.reset().setPlayersAndRoles(['Spy', 'Empath', 'Fool', 'Fool', 'Imp'])
@@ -455,8 +454,8 @@ export const getRoles = () => {
                     }
                 })
             },
-            test() {
-                const game = makeTestGame()
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestGame()
                 game.setPlayersAndRoles(['Grandmother', 'Washerwoman', 'Undertaker', 'Investigator', 'Imp', 'Monk', 'Ravenkeeper'])
                 game.doRolesSetup()
 
@@ -787,7 +786,35 @@ export const getRoles = () => {
         {
             "name": "Virgo",
             "difficulty": CUSTOM_TEST,
-            "effect": "The 1st time you would be executed, you don't die. If the nominator is a Townsfolk, they are executed instead."
+            "effect": "The 1st time you are executed, you don't die and choose a player. If they are a Townsfolk, they are executed immediately.",
+            actionDuration: 'onDayEnd',
+            onDeath(source, me, game) {
+                console.log(`Miau miau VIRGOO`)
+                if (source.type != SourceOfDeathTypes.EXECUTION) {
+                    return true
+                }
+                if (me.isDrunkOrPoisoned()) {
+                    return true
+                }
+                if (me.didUsePower) {
+                    return true
+                }
+                me.didUsePower = true
+                me.isDead = false
+                game.sendNotification('info', 'Execution failed!')
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+                return false
+            },
+            onPlayerAction(game, me, actionData) {
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                if (!chosenPlayer.isEvil() && chosenPlayer.isOutsider()) {
+                    game.sendNotification('info', 'Nothing happens.')
+                    return
+                }
+                game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.EXECUTION })
+            }
         },
         {
             "name": "Washerwoman",
@@ -1192,6 +1219,14 @@ export const getRoles = () => {
             "name": "Poisoner",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night, choose a player: they are poisoned tonight and tomorrow day.",
+            ribbonColor: EVIL_COLOR,
+            ribbonText: "EVIL",
+            isEvil: true,
+        },
+        {
+            "name": "Intoxist",
+            "difficulty": CUSTOM_TEST,
+            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough) and tomorrow day. In the morning, know if your poison did anything to them.",
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,

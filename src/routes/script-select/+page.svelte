@@ -7,7 +7,7 @@
     import RoleChooserDrawer from "../../components/RoleChooserDrawer.svelte";
     import RoleListWithRoles from "../../components/RoleListWithRoles.svelte";
     import RoundCardPortrait from "../../components/RoundCardPortrait.svelte";
-    import { getRole, getRolesByDifficulty } from "../../lib/Database";
+    import { getRole, getRolesByDifficulty } from "$lib/shared-lib/SharedDatabase";
     import { customScripts } from "../../stores/custom-scripts-store";
     import { mods, selectedModOption } from "../../stores/mods-store";
     import { chosenScriptName, chosenScriptRoleNames } from "../../stores/scripts-store";

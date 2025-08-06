@@ -3,9 +3,7 @@
 import { browser } from '$app/environment'
 import { writable, get } from 'svelte/store'
 import QRCode from 'qrcode'
-import { getRole, getRoleByI } from './Database'
-import { isNumber } from './utils'
-import { page } from '$app/stores'
+import { getRole, getRoleByI } from '$lib/shared-lib/SharedDatabase'
 
 export function getUrlWithParams(baseUrl, obj) {
     let paramTexts = []
