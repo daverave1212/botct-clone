@@ -11,6 +11,13 @@ export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to 
 export function randomOf(...args){
     return args[randomInt(0, args.length - 1)];
 }
+export function randomFrom(array, args) {
+    const elem = array[randomInt(0, array.length - 1)];
+    if (args.prefer != null && args.prefer(elem) == false) {
+        const elem = array[randomInt(0, array.length - 1)]
+    }
+    return elem
+}
 export function randomizeArray(array_a){
     var iRandomize;
     for(iRandomize = 0; iRandomize < array_a.length; iRandomize++){

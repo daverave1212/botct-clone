@@ -1,4 +1,4 @@
-import { percentChance, randomOf, randomizeArray, test } from "$lib/shared-lib/shared-utils"
+import { percentChance, randomOf, randomFrom, randomizeArray, test } from "$lib/shared-lib/shared-utils"
 import { StatusEffectDuration,SourceOfDeathTypes, ActionTypes, ActionDurations } from "$lib/shared-lib/GamePhases"
 import { GamePhases } from "$lib/shared-lib/GamePhases"
 import { randomInt } from "$lib/shared-lib/shared-utils"
@@ -167,6 +167,7 @@ export const getRoles = () => {
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing how many pairs of evil players there are.",
             infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0.25: 1,
             onNightStart(game, me) {
                 if (game.playersInRoom?.length < 1) {
                     return
@@ -196,8 +197,9 @@ export const getRoles = () => {
             "name": "Clockmaker",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "You start knowing how many steps from the Demon to its nearest Minion.",
+            getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup: function(game, player) {
-                if (player.isDrunk) {
+                if (player.isDrunkOrPoisoned()) {
                     player.info = {
                         text: `<h1>${randomInt(1, Math.floor(game.playersInRoom.length / 2))}</h1>`
                     }
@@ -286,6 +288,7 @@ export const getRoles = () => {
             "name": "Dreamer",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct.",
+            getPower: (game, me) => game.roundNumber * 0.4 + me.isDead? 0.2: 0,
             onNightStart(game, me) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER,
@@ -297,6 +300,7 @@ export const getRoles = () => {
             onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 let chosenPlayerRealRole = chosenPlayer.role?.name
+                
                 const allScriptRoles = game.getScriptRoleObjects()
                 let randomOppositeRole =
                     chosenPlayer.role.isEvil?
@@ -310,7 +314,7 @@ export const getRoles = () => {
                     return
                 }
 
-                if (me.isDrunkOrPoisoned()) {
+                if (me.isDrunkOrPoisoned() || chosenPlayer.role?.name == 'Recluse') {
                     const scriptRoles = game.getScriptRoleObjects()
                     const scriptEvils = scriptRoles.filter(r => r.isEvil)
                     const scriptNonEvils = scriptRoles.filter(r => !r.isEvil && r.name != me.role.name)
@@ -329,6 +333,7 @@ export const getRoles = () => {
             "name": "Empath",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night, you learn how many of your 2 alive neighbors are evil.",
+            getPower: (game, me) => game.roundNumber * 0.25 + me.isDead? 0.45: 0,
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
                 if (me.isDrunk) {
@@ -409,6 +414,7 @@ export const getRoles = () => {
             "name": "Fool",
             "difficulty": BAD_MOON_RISING,
             "effect": "The 1st time you die, you dont.",
+            getPower: (game, me) => me.isDead? 0: 1.25,
             onDeath(source, me) {
                 if (me.didUsePower || me.isDrunk) {
                     return true
@@ -431,7 +437,33 @@ export const getRoles = () => {
         {
             "name": "General",
             "difficulty": EXPERIMENTAL,
-            "effect": "Each night, you learn which alignment the Storyteller believes is winning: good, evil, or neither."
+            "effect": "Each night, you learn which alignment the Storyteller believes is winning: good, evil, or neither.",
+            infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0: 1,
+            onNightStart(game, me) {
+                let tfPower = game.getTownsfolk()
+                    .map(p => p.isDrunk? 0: p.role?.getPower(game, p))
+                    .reduce((soFar, n) => soFar + n, 0)
+                let evPower = game.getEvils()
+                    .map(p => p.is)
+                    .reduce((soFar, n) => soFar + n, 0)
+                
+                if (me.isDrunkOrPoisoned()) {
+                    tfPower = randomInt(0, 3)
+                    evPower = randomInt(0, 3)
+                }
+                
+                me.info = {
+                    type: InfoTypes.ROLES,
+                    text: `<em>${
+                        Math.abs(tfPower - evPower) < 2?
+                            'Neither'
+                        :tfPower > evPower?
+                            'Townsfolk'
+                        :'Evils'
+                    }</em>`
+                }
+            }
         },
         {
             "name": "Gossip",
@@ -441,6 +473,16 @@ export const getRoles = () => {
         {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
+            getPower: (game, me) => {
+                const isGrandsonDead = game.playersInRoom.find(p => p.hasStatus('Grandson'))
+                if (isGrandsonDead && me.isDead) {
+                    return 0
+                }
+                if (me.isDead && !isGrandsonDead) {
+                    return 0.5
+                }
+                return 1
+            },
             "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
             infoDuration: 'onNightEnd',
             onSetup: function(game, player) {
@@ -506,9 +548,10 @@ export const getRoles = () => {
             "name": "Investigator",
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Minion.",
+            getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup: function(game, player) {
                 let randomMinion = randomOf(...game.getMinions())
-                if (player.isDrunk) {
+                if (player.isDrunkOrPoisoned()) {
                     randomMinion = randomOf(...game.getPlayersExcept([player.name]))
                 }
 
@@ -550,10 +593,16 @@ export const getRoles = () => {
             "name": "Librarian",
             "difficulty": TROUBLE_BREWING,
             "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
+            getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup: function(game, player) {
-                let randomOutsider = randomOf(...game.getOutsiders())
-                if (player.isDrunk) {
+                let randomOutsider = randomFrom(game.getOutsiders(), { prefer: p => !p.isRegisteredAsEvil()})
+                let outsiderRoleName = randomOutsider.isDrunk? 'Drunk': randomOutsider?.role?.name
+                if (player.isDrunkOrPoisoned()) {
                     randomOutsider = randomOf(...game.getPlayersExcept([player.name]))
+                    outsiderRoleName = randomOf(...game.getScriptRoleObjects().filter(r => r.isOutsider))
+                    if (game.isRoleInScript('Drunk') && percentChance(50)) {
+                        outsiderRoleName = 'Drunk'
+                    }
                 }
 
                 if (randomOutsider == null) {
@@ -569,10 +618,8 @@ export const getRoles = () => {
                 
                 const playersDisplayed = randomizeArray([randomOutsider, randomTownsfolk])
 
-                const outsiderName = randomOutsider.isDrunk? 'Drunk': randomOutsider.role.name
-
                 player.info = {
-                    roles: [outsiderName],
+                    roles: [outsiderRoleName],
                     text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
                 }
             }
@@ -608,6 +655,7 @@ export const getRoles = () => {
             "name": "Monk",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night*, choose a player (not yourself): they are safe from the Demon tonight.",
+            getPower: (game, me) => me.isDead? 0: ((game.playersInRoom.length / game.getAlivePlayers().length) * 2),
             onNightStart(game, player) {
                 const me = game.getPlayer(player?.name || player)
                 me.availableAction = {
@@ -653,6 +701,7 @@ export const getRoles = () => {
             "difficulty": EXPERIMENTAL,
             "effect": "You start knowing 3 players, 1 and only 1 of which is evil.",
             infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup(game, me) {
                 const evils = game.getPlayersThatRegisterAsEvil()
                 const theEvilPlayer = randomOf(...evils)
@@ -705,7 +754,50 @@ export const getRoles = () => {
         {
             "name": "Ravenkeeper",
             "difficulty": TROUBLE_BREWING,
-            "effect": "If you die at night, you are woken to choose a player: you learn their character."
+            "effect": "If you die at night, you are woken to choose a player: you learn their character.",
+            getPower: (game, me) => me.isDead? (me.didUsePower? 0.5: 0): 1,
+            actionDuration: 'onDayEnd',
+            infoDuration: 'onDayEnd',
+            afterDeath(source, me, game) {
+                if (source.type == SourceOfDeathTypes.EXECUTION) {
+                    return
+                }
+
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+
+            },
+            onPlayerAction(game, me, actionData) {
+                const getRandomEvilNameInScript = () => randomFrom(game.getScriptRoleObjects().filter(r => r.isEvil)).name
+                const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+                let roleName = chosenPlayer.role?.name
+
+                if (roleName == 'Recluse') {
+                    roleName = getRandomEvilNameInScript()
+                }
+
+                if (me.isDrunkOrPoisoned()) {
+                    if (chosenPlayer.isDrunk) {
+                        roleName = chosenPlayer.role?.name
+                    } else if (chosenPlayer.isOutsider()) {
+                        roleName = getRandomEvilNameInScript()
+                    } else if (chosenPlayer.isTownsfolk()) {
+                        if (percentChance(75)) {
+                            roleName = 'Drunk'
+                        } else {
+                            roleName = getRandomEvilNameInScript()
+                        }
+                    }
+                } else {
+                    me.didUsePower = true
+                }
+
+                me.info = {
+                    type: InfoTypes.ROLES,
+                    roles: [roleName]
+                }
+            }
         },
         {
             "name": "Sage",
@@ -736,7 +828,21 @@ export const getRoles = () => {
         {
             "name": "Slayer",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Once per game, during the day, publicly choose a player: if they are the Demon, they die."
+            "effect": "Once per game, during the day, publicly choose a player: if they are the Demon, they die.",
+            getPower: (game, me) => me.isDead? (me.didUsePower? 0: -0.5): 1,
+            actionDuration: 'onDayEnd',
+            onDayStart(game, me) {
+                if (me.didUsePower) {
+                    return
+                }
+                me.availableAction = { type: ActionTypes.CHOOSE_PLAYER }
+            },
+            onPlayerAction(game, me, actionData) {
+                const chosenPlayer = game.getPlayer(actionData)
+                if (chosenPlayer.role?.isDemon) {
+                    game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+                }
+            }
         },
         {
             "name": "Snake Charmer",
@@ -747,6 +853,7 @@ export const getRoles = () => {
             "name": "Soldier",
             "difficulty": TROUBLE_BREWING,
             "effect": "You are safe from the Demon.",
+            getPower: (game, me) => me.isDead? 0: 1,
             onDeath(source, me) {
                 if (me.isDrunk) {
                     return true
@@ -776,15 +883,19 @@ export const getRoles = () => {
             "name": "Undertaker",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night*, you learn which character died by execution today.",
+            getPower: (game, me) => game.roundNumber * 0.5 + me.isDead? -0.1: 0,
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
-                if (me.isDrunk) {
-                    const getRandomRole = () => randomOf(...game.scriptRoleNames.filter(rn => rn != me.role?.name && rn != 'Drunk'))
+                if (me.isDrunkOrPoisoned()) {
+                    if (me.rolesChecked == null) {
+                        me.rolesChecked = []
+                    }
                     // For more interesting options
                     const rolesNotUsed = game.getRolesNotInGame()
                     const possibleRoles = percentChance(50)? rolesNotUsed: [...rolesNotUsed, ...game.getRolesInGame()]
-                    const rolesToPick = possibleRoles.filter(r => r.name != me.role.name)
+                    const rolesToPick = possibleRoles.filter(r => r.name != me.role.name && !me.rolesChecked.includes(r.name))
                     const randomRoleName = randomOf(...rolesToPick).name
+                    me.rolesChecked.push(randomRoleName)
 
                     me.info = {
                         roles: [randomRoleName]
@@ -822,6 +933,7 @@ export const getRoles = () => {
             "difficulty": CUSTOM_TEST,
             "effect": "The 1st time you are executed, you don't die and choose a player. If they are a Townsfolk, they die tonight.",
             actionDuration: 'onDayEnd',
+            getPower: (game, me) => me.isDead? 0: 1,
             onDeath(source, me, game) {
                 console.log(`Miau miau VIRGOO`)
                 if (source.type != SourceOfDeathTypes.EXECUTION) {
@@ -860,7 +972,7 @@ export const getRoles = () => {
             "effect": "You start knowing that 1 of 2 players is a particular Townsfolk.",
             onSetup: function(game, player) {
                 let randomTF = randomOf(...game.getNonOutsiderTownsfolk().filter(p => p.name != player.name))
-                if (player.isDrunk) {
+                if (player.isDrunkOrPoisoned()) {
                     randomTF = randomOf(...game.getPlayersExcept([player.name]))
                 }
 
@@ -915,6 +1027,7 @@ export const getRoles = () => {
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
             isOutsider: true,
+            getPower: (game, me) => me.isDead? 0.5: -0.5,
             onAssignRole(game, me) {
                 const rolesNotUsed = game.getRolesNotInGame()
                 const goodRolesNotInGame = rolesNotUsed.filter(r => !r.isEvil && !r.isOutsider)
@@ -974,6 +1087,7 @@ export const getRoles = () => {
         {
             "name": "Moonchild",
             "difficulty": BAD_MOON_RISING,
+            getPower: (game, me) => 0,
             "effect": "When you learn that you died, publicly choose 1 alive player. Tonight, if it was a good player, they die.",
             ribbonColor: NIGHTLY_COLOR,
             ribbonText: "OUTSIDER",
@@ -997,6 +1111,7 @@ export const getRoles = () => {
         },
         {
             "name": "Mutant",
+            getPower: (game, me) => 0,
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "You must never claim or insinuate you're a Mutant or an Outsider. If you do, use your power to kill yourself.",
             "notes": "Be fair, don't cheat. If anyone asks, you can say you don't want to say your role or pretend you're a different one.",
@@ -1055,6 +1170,7 @@ export const getRoles = () => {
         },
         {
             "name": "Saint",
+            getPower: (game, me) => me.isDead? 0.25: -0.25,
             "difficulty": TROUBLE_BREWING,
             "effect": "If you die by execution, your team loses.",
             ribbonColor: NIGHTLY_COLOR,
@@ -1106,6 +1222,7 @@ export const getRoles = () => {
             ribbonText: "EVIL",
             isEvil: true,
             actionDuration: 'onNightEnd',
+            getPower: (game, me) => (me.didUsePower? 1: 0) + (me.isDead? 0: 1),
             onNightStart(game, me) {
                 if (me.didUsePower) {
                     return
@@ -1141,6 +1258,7 @@ export const getRoles = () => {
             "name": "Baron",
             "difficulty": TROUBLE_BREWING,
             "effect": "There are extra Outsiders in play. [+2 Outsiders]",
+            getPower: (game, me) => me.isDead? 0: 0.5,
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
@@ -1290,6 +1408,13 @@ export const getRoles = () => {
             isEvil: true,
             infoDuration: 'onNightEnd',
             actionDuration: 'onNightEnd',
+            getPower: (game, me) => {
+                const nSuccessfulPoisons = game.getTownsfolk()
+                    .map(p => p.poisonEffectHistory.length)
+                    .reduce((soFar, n) => soFar + n, 0)
+                return nSuccessfulPoisons + me.isDead? 0: 0.75
+
+            },
             onNightStart(game, me) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER
@@ -1300,9 +1425,7 @@ export const getRoles = () => {
                 if (me.chosenPlayerName != null) {
                     const chosenPlayer = game.getPlayer(me.chosenPlayerName)
                     const lastPoisonEffect = chosenPlayer.getLastPoisonEffect()
-                    console.log(me.chosenPlayerName)
-                    console.log(lastPoisonEffect)
-                    console.log(game.roundNumber)
+
                     if (lastPoisonEffect?.roundNumber == game.roundNumber - 1) {
                         me.info = {
                             roles: [],
@@ -1346,6 +1469,7 @@ export const getRoles = () => {
             ribbonText: "EVIL",
             isEvil: true,
             infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0: 1.5,
             onNightStart(game, me) {
                 if (me.didUsePower) {
                     return
@@ -1379,6 +1503,7 @@ export const getRoles = () => {
             ribbonText: "EVIL",
             isEvil: true,
             infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0: 2,
             onNightStart(game, me) {
                 me.info = {
                     type: InfoTypes.PLAYERS_WITH_ROLES,
@@ -1458,6 +1583,7 @@ export const getRoles = () => {
             isDemon: true,
             isEvil: true,
             infoDuration: 'onNightEnd',
+            getPower: (game, me) => me.isDead? 0: 3,
             onSetup(game, player) {
                 const townsfolkNotInGame = randomizeArray(
                     game.getRolesNotInGame()
@@ -1882,3 +2008,8 @@ export function getRoleNumbersByPlayers(nPlayers) {
     const [nTownsfolk, nOutsiders, nMinions, nDemons] = roleNumbersTable[nPlayers]
     return { nTownsfolk, nOutsiders, nMinions, nDemons }
 }
+
+const OUTSIDER_POWER = 0
+const TOWNSFOLK_POWER = 1
+const MINION_POWER = TOWNSFOLK_POWER * 2
+const DEMON_POWER = TOWNSFOLK_POWER * 3

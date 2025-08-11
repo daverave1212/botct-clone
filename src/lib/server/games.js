@@ -75,6 +75,10 @@ class Player {
         return this.role?.isOutsider || this.isDrunk
     }
 
+    isTownsfolk() {
+        return !this.isOutsider() && !this.isEvil()
+    }
+
     isDrunkOrPoisoned() {
         const poisonStatus = this.statusEffects.find(se => se.isPoisoned)
         const amI = this.isPoisoned || poisonStatus != null
@@ -108,6 +112,10 @@ class Player {
 
     addStatus(obj) {
         this.statusEffects.push(obj)
+    }
+
+    hasStatus(name) {
+        return this.statusEffects.find(se => se.name == name) != null
     }
 }
 
@@ -251,8 +259,8 @@ class Game {
         this.#applyAllEventsAt('onAssignRole')
 
         if (IS_DEBUG) {
-            this.playersInRoom[0].role = getRole('Spy')
-            this.playersInRoom[1].role = getRole('Recluse')
+            this.playersInRoom[0].role = getRole('Slayer')
+            // this.playersInRoom[1].role = getRole('Recluse')
         }
 
         this.#applyAllEventsAt('afterAssignRole')
@@ -436,6 +444,10 @@ class Game {
         const thatPlayer = playersInRoom.find(p => p?.role?.name == roleOrRoleName)
         return thatPlayer != null
     }
+    isRoleInScript(roleOrRoleName) {
+        roleOrRoleName = roleOrRoleName.name ?? roleOrRoleName
+        return this.scriptRoleNames.includes(roleOrRoleName)
+    }
     checkWinConditions() {
         if (this.winner != null) {
             return
@@ -476,8 +488,6 @@ class Game {
             // console.error(`\nERROR: Player ${playerOrName} has no role!`)
         }
 
-        const playerStatusEffects = [...player.statusEffects]
-
         const shouldContinue = this.#applyPlayerDeathEventsAt(player, 'onDeath', source)
         
         if (shouldContinue == false) {
@@ -490,6 +500,7 @@ class Game {
             playerName: player.name,
             source
         })
+        this.sendNotification('info', `${player.name} died.`)
 
         this.#applyPlayerDeathEventsAt(player, 'afterDeath', source)
 
