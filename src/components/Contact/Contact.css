@@ -49,11 +49,11 @@
     margin-left: calc(-0.35 * var(--contact-header-height));
 }
 .contact .picture-wrapper img.center {
-    height: calc(1.2 * var(--contact-header-height));
-    width: calc(1.2 * var(--contact-header-height));
+    height: calc(1.1 * var(--contact-header-height));
+    width: calc(1.1 * var(--contact-header-height));
 
     margin-top: calc(0 * var(--contact-header-height));
-    margin-left: calc(-0.1 * var(--contact-header-height));
+    margin-left: calc(0 * var(--contact-header-height));
 }
 .contact--mod .picture-wrapper img.center {
     height: calc(var(--mod-image-width));

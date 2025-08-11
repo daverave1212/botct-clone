@@ -177,7 +177,7 @@
 
     $: shouldShowSortTooltip =
         $hasExpandTooltip == false &&
-        $playersInRoom.filter(player => player.role == null).length == 0 &&
+        $playersInRoom?.filter(player => player.role == null)?.length == 0 &&
         $hasSortTooltip
     $: backgroundColor = $phase == 'night'? '#18172e': 'white'
 
@@ -355,7 +355,8 @@
             <div style="width: 100%" class="flex-row gap-1">
                 <MinimalContact
                     name={player.name}
-                    src={player.src}
+                    emoji={player.emoji}
+                    color={player.color}
                     isDead={player.isDead}
                     on:contact-click={evt => {
                         evt.stopPropagation();
@@ -372,7 +373,9 @@
 <DrawerPage
     isOpen={isMyInfoRolesDrawerOpen}
     zIndex="487 !important"
-    on:click={() => {}}
+    on:click={() => {
+        isMyInfoRolesDrawerOpen = false
+    }}
 >
 
     {#if $me.info?.playersWithRoles != null}
@@ -381,7 +384,9 @@
                 <div style="width: 100%" class="flex-row gap-1">
                     <MinimalContact
                         name={player.name}
-                        src={`/images/role-thumbnails/${player.roleName}.webp`}
+                        emoji={$playersInRoom.find(p => p.name == player.name)?.emoji}
+                        color={$playersInRoom.find(p => p.name == player.name)?.color}
+                        roleName={player.roleName}
                         isDead={player.isDead}
                         on:contact-click={name => {
                             isMyInfoRolesDrawerOpen = false
@@ -514,7 +519,8 @@
             <div style="width: 100%" class="flex-row gap-1">
                 <MinimalContact
                     name={player.name}
-                    src={player.src}
+                    emoji={player.emoji}
+                    color={player.color}
                     isDead={player.isDead}
                 >
                     {#if amIAdmin}

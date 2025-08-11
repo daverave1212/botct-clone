@@ -1,4 +1,8 @@
 <script>
+	import { randomInt } from '$lib/shared-lib/shared-utils';
+	import EmojiPortrait from './../../../components/EmojiPortrait.svelte';
+	import DrawerPage from './../../../components-standalone/DrawerPage.svelte';
+    import { getAvailableEmojis } from './../../../lib/EmojiDatabase.js';
     import { me } from './../../../stores/online/local/me.js';
     import { allIcons } from './../../../lib/IconsDatabase.js';
     import { goto } from '$app/navigation';
@@ -8,15 +12,21 @@
     import RoleChooserManyDrawer from '../../../components/RoleChooserManyDrawer.svelte';
     import { roomCode, scriptName } from '../../../stores/online/local/room.js';
     import { getCustomScriptRoleNames, setCustomScript } from '../../../stores/custom-scripts-store.js';
-    import SafeButton from '../../../components-standalone/SafeButton.svelte';
-
+    import SafeButton from '../../../components-standalone/SafeButton.svelte';    
 
     let isRoleChooserOpen = false
+    let isEmojiChooserOpen = false
 
     let cachedChosenIconSrc = $me.src
+    let cachedChosenEmoji = $me.emoji
+
+    let colorRangeValue = randomInt(1, 359)
+    
+    $: myColor = `hsl(${colorRangeValue}, 70%, 60%)`
 
     me.subscribe(newMe => {
         cachedChosenIconSrc = newMe.src
+        cachedChosenEmoji = newMe.emoji
     })
 
     function onNameClick() {
@@ -25,7 +35,14 @@
     }
 
     function onPortraitClick() {
-        isRoleChooserOpen = true
+        // isRoleChooserOpen = true
+        isEmojiChooserOpen = true
+    }
+
+    function onClickOnEmoji(emojiStr) {
+        isEmojiChooserOpen = false
+        $me = {...$me, emoji: emojiStr }
+        cachedChosenEmoji = emojiStr
     }
 
     function setIcon(iconI) {
@@ -44,8 +61,8 @@
     async function onJoin() {
         const inputRoomCode = prompt('Enter room code.')
         $roomCode = inputRoomCode
-        const newMe = await fetchGame('POST', `/api/game/${inputRoomCode}/player`)
-        $me = newMe
+        const newMe = await fetchGame('POST', `/api/game/${inputRoomCode}/player`, { me: $me })
+        $me = {...newMe, privateKey: $me.privateKey}
         const game = await fetchGame('GET', `/api/game/${inputRoomCode}`)
         $scriptName = game.scriptName
         setCustomScript(game.scriptName, game.scriptRoleNames)
@@ -59,12 +76,11 @@
         $scriptName = "My Custom Script"
         const scriptRoleNames = getCustomScriptRoleNames($scriptName)
 
-        const response = await fetchGame('POST', '/api/game', { scriptRoleNames, scriptName: $scriptName })
+        const response = await fetchGame('POST', '/api/game', { scriptRoleNames, scriptName: $scriptName, me: $me })
 
         // privateKey is the same for the owner and the game
         $me = {...$me, privateKey: response.privateKey }
         $roomCode = response.roomCode
-        console.log({response, me: $me, roomCode: $roomCode})
         setTimeout(() => {
             goto('/online/online-game')
         }, 250)
@@ -72,8 +88,19 @@
 
 </script>
 
+<DrawerPage isOpen={isEmojiChooserOpen} on:click={() => {
+    isEmojiChooserOpen = false
+}}>
+    <div class="flex wrap padding-2" style="justify-content: space-around; gap: 4rem;">
+        {#each getAvailableEmojis() as emoji, i (i)}
+            <div class="unselectable" style="font-size: 3rem;" on:click={() => {onClickOnEmoji(emoji)}}>
+                {emoji}
+            </div>
+        {/each}
+    </div>
+</DrawerPage>
 
-<RoleChooserManyDrawer
+<!-- <RoleChooserManyDrawer
     isOpen={isRoleChooserOpen}
     roles={allIcons}
     
@@ -83,12 +110,12 @@
 
     onClickOnRole={clickedRoleI => setIcon(clickedRoleI)}
     onClickOutside={() => closeRoleChooserDrawerWithoutSideEffects()}
-></RoleChooserManyDrawer>
+></RoleChooserManyDrawer> -->
 
 <div class="page center-text">
 
     <h2 class="margin-top-4">Play!</h2>
-    <p class="margin-top-1">Tap on the icon to change your portrait. Choose if you want to join an existing game or create a new one.</p>
+    <p class="margin-top-1">Tap on the icon to change your portrait and adjust the slider for the background color. Choose if you want to join an existing game or create a new one.</p>
     
     <div class="flex-column gap-1 margin-top-2">
 
@@ -96,8 +123,20 @@
             <RoundCardPortrait
                 src={$me.src}
                 isBig={true}
+                hasCustomContent={true}
                 on:click={onPortraitClick}
-            />
+            >
+                <EmojiPortrait
+                    emoji={$me.emoji}
+                    size="var(--role-chooser-image-size-big)"
+                    color="hsl({colorRangeValue}, 70%, 60%)"
+                />
+            </RoundCardPortrait>
+        </div>
+        <div>
+            <input style={`color: ${myColor};`} type="range" min="1" max="360" step="1" bind:value={colorRangeValue} on:change={() => {
+                $me = {...$me, color: myColor}
+            }}>
         </div>
         <input class="margin-top-2" placeholder="Name" on:click={onNameClick} value={$me.name} readonly/>
         <div class="flex-content center margin-top-2">

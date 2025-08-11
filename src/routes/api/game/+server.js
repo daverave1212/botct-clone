@@ -4,11 +4,15 @@ import { getRequestUser, response } from "../../../lib/server/utils"
 
 export async function POST({ request, url, params }) {
     const data = await request.json()
+    const { emoji, color } = data.me
 
-    const player = getRequestUser(request)
+    console.log({emoji})
+    const player = { ...getRequestUser(request), emoji, color }
+    console.log(player.emoji)
 
     const game = createNewGame(player)
     addPlayerToGameST({...player, privateKey: game.privateKey}, game.roomCode)
+    console.log(game.playersInRoom[0].emoji)
 
     game.scriptRoleNames = data.scriptRoleNames
     game.scriptName = data.scriptName

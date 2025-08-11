@@ -3,7 +3,8 @@ import { getRequestUser, response } from "../../../../../lib/server/utils";
 
 
 export async function POST({ request, params }) {
-    const player = getRequestUser(request)
+    const data = await request.json()
+    const player = {...getRequestUser(request), ...data.me}
     const game = getGame(params.roomCode)
     
     if (game == null) {

@@ -8,10 +8,11 @@ const DEFAULT_SCRIPTS = {
     'Bad Moon Rising': getRoles().filter(role => role.difficulty == BAD_MOON_RISING).map(role => role.name),
     'Sects and Violets': getRoles().filter(role => role.difficulty == SECTS_AND_VIOLETS).map(role => role.name),
     'My Custom Script': [    // TODO: Remove this and replace it
-        'Investigator',
         'Librarian',
-        'Grandmother',
+        'Investigator',
         'Clockmaker',
+        'Grandmother',
+        
         'Chef',     // Not tested
         'Empath',
         'Dreamer',

@@ -651,7 +651,21 @@ export const getRoles = () => {
         {
             "name": "Noble",
             "difficulty": EXPERIMENTAL,
-            "effect": "You start knowing 3 players, 1 and only 1 of which is evil."
+            "effect": "You start knowing 3 players, 1 and only 1 of which is evil.",
+            infoDuration: 'onNightEnd',
+            onSetup(game, me) {
+                const evils = game.getPlayersThatRegisterAsEvil()
+                const theEvilPlayer = randomOf(...evils)
+                const goods = randomizeArray(game.getTownsfolk())
+                const twoGoods = goods.slice(0, 2)
+                const all3 = randomizeArray([...twoGoods, theEvilPlayer])
+                me.info = {
+                    type: InfoTypes.PLAYERS_WITH_ROLES,
+                    playersWithRoles: all3.map(p => ({
+                        name: p.name
+                    }))
+                }
+            }
         },
         {
             "name": "Oracle",

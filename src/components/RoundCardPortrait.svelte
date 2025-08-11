@@ -113,6 +113,7 @@
     export let name
     export let src
     export let isBig = false
+    export let hasCustomContent = false
 
     let {
         team,
@@ -133,7 +134,7 @@
         _src == 'none'?
             '/images/user.png'
         :_src != null?
-        _src
+            _src
         : `/images/role-thumbnails/${_name}.webp`
     $: ribbon =
         !hasRibbon? null:
@@ -194,7 +195,7 @@
 </script>
 
 <div class="image-wrapper {_isBig? 'big': ''}" on:click={(evt) => dispatch('click', evt)}>
-    <div class={`content ${canOverflow? 'can-overflow': ''}`} style={borderStyle}>
+    <div class={`content ${canOverflow? 'can-overflow': ''}`} style="{borderStyle}">
         {#if _isBig != true}
             {#if isDemon}
                 <div class="ribbon evil" style={`background-color: ${EVIL_COLOR}`}>DEMON</div>
@@ -205,7 +206,11 @@
                 </div>
             {/if}
         {/if}
-        <img src={imagePath} class="{role.isValid == false? 'grayscale': isOutsider? 'outsider': ''}"/>
+        {#if hasCustomContent}
+            <slot></slot>
+        {:else}
+            <img src={imagePath} class="{role.isValid == false? 'grayscale': ''}"/>
+        {/if}
     </div>
     {#if badgeText != null && badgeToColorMapping[badgeText] != null}
         <div class="badge" style="background-color: {badgeToColorMapping[badgeText]}">{badgeText}</div>

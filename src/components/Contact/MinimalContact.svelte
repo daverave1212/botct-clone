@@ -1,4 +1,5 @@
 <script>
+	import EmojiPortrait from './../EmojiPortrait.svelte';
 
     import { createEventDispatcher, onMount } from 'svelte'
     import { page, navigating } from '$app/stores'
@@ -10,11 +11,16 @@
     export let name
     export let src
     export let isDead
+    export let emoji
+    export let color
+    export let roleName
 
     let isExpanded = false
 
     let _subtitleInputValue
     let domInput
+
+    $: displayName = roleName == null? name: `${name} | ${roleName}`
 
     $: SUBCONTENT_CLASS = isExpanded ? 'subcontent subcontent--expanded' : 'subcontent'
 
@@ -31,14 +37,26 @@
     <div class="header {isDead? 'dead': ''}">
         <div class="picture-wrapper" on:click={toggleContent}>
             <!-- svelte-ignore a11y-missing-attribute -->
-            <img
-                src={src == null? 'images/user.png' : src}
-                class="center unselectable"
-            />
+            {#if color == null || emoji == null}
+                <img
+                    src={src == null? 'images/user.png' : src}
+                    class="center unselectable"
+                />
+            {:else}
+                <EmojiPortrait emoji={emoji} color={color} size="var(--contact-header-height)"/>
+            {/if}
         </div>
         <div class="right-wrapper upper-half">
-            <span class="subtitle unselectable" on:click={toggleContent}>{name}</span>
+            <span class="subtitle unselectable" on:click={toggleContent}>{displayName}</span>
         </div>
+        {#if roleName != null}
+            <div class="picture-wrapper" style="margin-left: 1rem;">
+                <img
+                    src={`/images/role-thumbnails/${roleName}.webp`}
+                    class="center unselectable"
+                />
+            </div>
+        {/if}
     </div>
     <div class="{SUBCONTENT_CLASS}">
         <div class="subcontent-content">

@@ -3,7 +3,9 @@ import { roomCode } from "../../stores/online/local/room"
 import { InfoTypes } from "$lib/shared-lib/GamePhases"
 import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "$lib/shared-lib/SharedDatabase"
 import { createRandomCode, popArrayElementFind, randomizeArray, swapElementsAt } from "./utils"
-const IS_DEBUG = false
+
+
+const IS_DEBUG = true
 
 
 function generateRandomRoomCode() {
@@ -36,24 +38,13 @@ const STATUS_EFFECT_TEMPLATE = {
     onDeath: (source, me, game) => true,    // Returns true if should continue death
 }
 
-const PLAYER_DEFAULT = {
-    name: 'Default',
-    src: 'user.png',
-    privateKey: null,
 
-    isDead: false,
-    role: null,
-    info: null,             // if info != null, on client side, it shows exactly the info as rendered HTML
-    availableAction: null,  // if availableAction != null, on client side, it shows the action based on the object. See template above.
-
-    changedAlignment: null, // 'evil' 'good'
-    isDrunk: false,
-    statusEffects: []
-}
 class Player {
-    constructor({ name, src, privateKey }, roomCode) {
+    constructor({ name, src, emoji='❓', color='hsl(0, 100%, 100%)', privateKey }, roomCode) {
         this.name = name
         this.src = src
+        this.emoji = emoji
+        this.color = color
         this.privateKey = privateKey
         this.roomCode = roomCode
 
@@ -249,7 +240,7 @@ class Game {
 
     assignRoles() {
         if (IS_DEBUG) {
-            this.setTestPlayersWithRoles(['Fool', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
+            this.setTestPlayersWithRoles(['Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
         }
 
         const rolesToAssign = randomizeArray(this.getRolesToAssign())
@@ -260,8 +251,8 @@ class Game {
         this.#applyAllEventsAt('onAssignRole')
 
         if (IS_DEBUG) {
-            this.playersInRoom[0].role = getRole('Imp')
-            this.playersInRoom[1].role = getRole('Scarlet Woman')
+            this.playersInRoom[0].role = getRole('Spy')
+            this.playersInRoom[1].role = getRole('Recluse')
         }
 
         this.#applyAllEventsAt('afterAssignRole')
@@ -350,6 +341,9 @@ class Game {
     getEvils() {
         return randomizeArray(this.playersInRoom.filter(p => p.isEvil()))
     }
+    getPlayersThatRegisterAsEvil() {
+        return randomizeArray(this.playersInRoom.filter(p => p.isRegisteredAsEvil()))
+    }
     getAlivePlayers() {
         return this.playersInRoom.filter(p => !p.isDead)
     }
@@ -436,6 +430,11 @@ class Game {
     }
     getRolesInGame() {
         return this.playersInRoom.map(p => p.isDrunk? getRole('Drunk'): p.role)
+    }
+    isRoleInGame(roleOrRoleName) {
+        roleOrRoleName = roleOrRoleName.name ?? roleOrRoleName
+        const thatPlayer = playersInRoom.find(p => p?.role?.name == roleOrRoleName)
+        return thatPlayer != null
     }
     checkWinConditions() {
         if (this.winner != null) {
