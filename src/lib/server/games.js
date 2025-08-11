@@ -76,6 +76,10 @@ class Player {
         return this.role?.isEvil || this.changedAlignment == 'evil'
     }
 
+    isRegisteredAsEvil() {
+        return this.isEvil() || this.role?.name == 'Recluse'
+    }
+
     isOutsider() {
         return this.role?.isOutsider || this.isDrunk
     }
@@ -185,7 +189,7 @@ class Game {
         this.#applyAllEventsAt('onDayStart')
     }
     #applyPlayerDeathEventsAt(player, eventName, source) {
-        for (const statusEffect of player.statusEffects) {
+        for (const statusEffect of [...player.statusEffects]) {
             if (statusEffect[eventName] != null) {
                 const shouldContinue = statusEffect[eventName](source, player, this)
                 if (shouldContinue == false) {  // true or null should both continue
@@ -215,7 +219,7 @@ class Game {
             }
 
             let skipsRoleEvent = false
-            for (const statusEffect of player.statusEffects) {
+            for (const statusEffect of [...player.statusEffects]) {
                 const eventFuncToCall = statusEffect[eventName]
                 if (eventFuncToCall == null) {
                     continue
@@ -245,7 +249,7 @@ class Game {
 
     assignRoles() {
         if (IS_DEBUG) {
-            this.setTestPlayersWithRoles(['Spy', 'Investigator', 'Mutant', 'Fool'])
+            this.setTestPlayersWithRoles(['Fool', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
         }
 
         const rolesToAssign = randomizeArray(this.getRolesToAssign())

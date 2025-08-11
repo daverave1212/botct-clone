@@ -165,7 +165,27 @@ export const getRoles = () => {
         {
             "name": "Chef",
             "difficulty": TROUBLE_BREWING,
-            "effect": "You start knowing how many pairs of evil players there are."
+            "effect": "You start knowing how many pairs of evil players there are.",
+            infoDuration: 'onNightEnd',
+            onNightStart(game, me) {
+                if (game.playersInRoom?.length < 1) {
+                    return
+                }
+                const playersPlus1 = [...game.playersInRoom, game.playersInRoom[0]]
+                let nPairsFound = 0
+                for (let i = 1; i < playersPlus1.length; i++) {
+                    const prevPlayer = playersPlus1[i-1]
+                    const thisPlayer = playersPlus1[i]
+                    if (prevPlayer.isRegisteredAsEvil() && thisPlayer.isRegisteredAsEvil()) {
+                        nPairsFound += 1
+                    }
+                }
+
+                me.info = {
+                    type: InfoTypes.ROLES,
+                    text: `<em>${nPairsFound}</em>`
+                }
+            }
         },
         {
             "name": "Choirboy",
@@ -322,7 +342,7 @@ export const getRoles = () => {
                 if (neighbors[0] == null || neighbors[1] == null) {
                     return
                 }
-                const evilNeighbors = neighbors.filter(p => p.isEvil())
+                const evilNeighbors = neighbors.filter(p => p.isRegisteredAsEvil())
                 me.info = {
                     text: `${evilNeighbors.length}`
                 }
@@ -786,7 +806,7 @@ export const getRoles = () => {
         {
             "name": "Virgo",
             "difficulty": CUSTOM_TEST,
-            "effect": "The 1st time you are executed, you don't die and choose a player. If they are a Townsfolk, they are executed immediately.",
+            "effect": "The 1st time you are executed, you don't die and choose a player. If they are a Townsfolk, they die tonight.",
             actionDuration: 'onDayEnd',
             onDeath(source, me, game) {
                 console.log(`Miau miau VIRGOO`)
@@ -810,10 +830,14 @@ export const getRoles = () => {
             onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 if (!chosenPlayer.isEvil() && chosenPlayer.isOutsider()) {
-                    game.sendNotification('info', 'Nothing happens.')
                     return
                 }
-                game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.EXECUTION })
+                chosenPlayer.addStatus({
+                    name: 'Virgoed',
+                    onNightEnd() {
+                        game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+                    }
+                })
             }
         },
         {

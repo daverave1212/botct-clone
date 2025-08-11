@@ -12,13 +12,14 @@ const DEFAULT_SCRIPTS = {
         'Librarian',
         'Grandmother',
         'Clockmaker',
+        'Chef',     // Not tested
         'Empath',
         'Dreamer',
         'Monk',
         'Undertaker',
         'Fool',
         'Soldier',
-        'Virgo',
+        'Virgo',    // Not tested
 
         'Saint',
         'Drunk',
