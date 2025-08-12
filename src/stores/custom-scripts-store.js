@@ -26,6 +26,7 @@ const DEFAULT_SCRIPTS = {
         'Virgo',            // Not tested
         'General',          // Not tested
         'Slayer',           // Not tested
+        'Mayor',            // Not tested
 
         'Saint',
         'Drunk',

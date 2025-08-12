@@ -45,18 +45,6 @@
         cachedChosenEmoji = emojiStr
     }
 
-    function setIcon(iconI) {
-        const chosenIcon = allIcons[iconI]
-        isRoleChooserOpen = false
-        $me = {...$me, src: chosenIcon.src }
-        cachedChosenIconSrc = chosenIcon.src
-        console.log(`Set icon to ${iconI} ${cachedChosenIconSrc}`)
-    }
-
-    function closeRoleChooserDrawerWithoutSideEffects() {
-        isRoleChooserOpen = false
-    }
-
 
     async function onJoin() {
         const inputRoomCode = prompt('Enter room code.')
@@ -73,17 +61,8 @@
     }
 
     async function onCreate() {
-        $scriptName = "My Custom Script"
-        const scriptRoleNames = getCustomScriptRoleNames($scriptName)
-
-        const response = await fetchGame('POST', '/api/game', { scriptRoleNames, scriptName: $scriptName, me: $me })
-
-        // privateKey is the same for the owner and the game
-        $me = {...$me, privateKey: response.privateKey }
-        $roomCode = response.roomCode
-        setTimeout(() => {
-            goto('/online/online-game')
-        }, 250)
+        $me = {...$me, color: myColor}
+        goto('/online/create-game')
     }
 
 </script>

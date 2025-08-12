@@ -174,11 +174,7 @@
     })
     
     $: availableRoles = $chosenScriptRoleNames == null? []: $chosenScriptRoleNames
-
-    $: shouldShowSortTooltip =
-        $hasExpandTooltip == false &&
-        $playersInRoom?.filter(player => player.role == null)?.length == 0 &&
-        $hasSortTooltip
+    $: myTrueRole = $me.secretRole ?? $me.role
     $: backgroundColor = $phase == 'night'? '#18172e': 'white'
 
     $: if (winner) {
@@ -326,7 +322,7 @@
 >
     <div class="margin-top-4 padding-2 center-text">
         {#if didEvilsWin}
-            {#if $me.role?.isEvil}
+            {#if myTrueRole?.isEvil}
                 <h1>Town Subdued!</h1>
             {:else}
                 <h1>Game Over</h1>
@@ -334,7 +330,7 @@
             <h2 class="margin-top-2" style="color: red;">Evils win!</h2>
         {/if}
         {#if didTownsfolkWin}
-            {#if $me.role?.isEvil}
+            {#if myTrueRole?.isEvil}
                 <h1>Game Over</h1>
             {:else}
                 <h1>Demon killed!</h1>
@@ -370,6 +366,7 @@
     </div>
 </DrawerPage>
 
+<!-- Players with roles INFO -->
 <DrawerPage
     isOpen={isMyInfoRolesDrawerOpen}
     zIndex="487 !important"
@@ -377,7 +374,6 @@
         isMyInfoRolesDrawerOpen = false
     }}
 >
-
     {#if $me.info?.playersWithRoles != null}
         <ContactList className="margin-top-2">
             {#each ($me.info.playersWithRoles ?? []) as player (player.name)}
@@ -408,12 +404,12 @@
 >
     {#if $me.info != null}
         <div class="center-content flex-column margin-top-2">
-            {#if $me.info.roles?.length == 1}
+            {#if $me.info.roles?.filter(rn => rn != null).length == 1}
                 <div class="margin-top-4"></div>
             {/if}
             <div>
                 {#if $me.info.roles != null}
-                    {#each $me.info.roles as roleName (roleName)}
+                    {#each $me.info.roles.filter(rn => rn != null) as roleName (roleName)}
                         <div class="center-content flex-column margin-top-1">
                             <div>
                                 <RoundCardPortrait role={{...getRole(roleName), isBig: true, isValid: true}}/>
@@ -553,7 +549,13 @@
                 {/if}
                 {#if $me.role != null && $me.name == player.name}
                     <button class="btn colorful" on:click={() => {
-                        roleBeingInspected = $me.role
+                        
+                        if ($me.hasOnlySecretRolePowers) {
+                            roleBeingInspected = myTrueRole
+                        } else {
+                            roleBeingInspected = $me.role
+                        }
+                    
                     }}>See Role</button>
                 {/if}
             </div>
