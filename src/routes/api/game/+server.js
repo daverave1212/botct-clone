@@ -5,12 +5,15 @@ import { getRequestUser, response } from "../../../lib/server/utils"
 export async function POST({ request, url, params }) {
     const data = await request.json()
     const { emoji, color } = data.me
+    const { pregameDuration, nightDuration } = data
 
     console.log({emoji})
     const player = { ...getRequestUser(request), emoji, color }
     console.log(player.emoji)
 
     const game = createNewGame(player)
+    game.pregameDuration = pregameDuration
+    game.nightDuration = nightDuration
     addPlayerToGameST({...player, privateKey: game.privateKey}, game.roomCode)
     console.log(game.playersInRoom[0].emoji)
 

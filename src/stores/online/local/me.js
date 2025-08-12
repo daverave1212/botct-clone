@@ -9,3 +9,4 @@ export const me = localStorageWritable('me', {
     isDead: false,
     privateKey: null    // For checking if I am the admin of a certain game
 })
+

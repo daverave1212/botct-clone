@@ -36,5 +36,6 @@ export const StatusEffectDuration = {
 export const SourceOfDeathTypes = {
     EXECUTION: 'execution',
     DEMON_KILL: 'demon-kill',
+    MAYOR_REDIRECT: 'mayor-redirect',   // Only used for mayor redirect to self
     OTHER: 'other'
 }
