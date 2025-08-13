@@ -15,6 +15,7 @@ export const SECTS_AND_VIOLETS = 1.5
 export const INTERMEDIATE = 2
 export const EXPERIMENTAL = 2.25
 export const ADVANCED = 9
+export const META_ROLES = 10
 
 export const COMPLETE = -124172
 
@@ -24,6 +25,7 @@ export const difficultyNames = {
     [BAD_MOON_RISING]: 'Bad Moon Rising',
     [SECTS_AND_VIOLETS]: 'Sects and Violets',
     [EXPERIMENTAL]: 'Experimental',
+    [META_ROLES]: 'Other',
     
     [INTERMEDIATE]: '--Intermediate',
     [ADVANCED]: 'Zzz...',
@@ -50,6 +52,7 @@ export const difficultyDescriptions = {
     [INTERMEDIATE]: 'Extra roles to add to make it more interesting. Every game, there should NOT be both a Town Guard and a Priest (unless there are more than 15 players). You don\'t have to play with all of them. Only choose which roles you like to play with.',
     [ADVANCED]: 'Roles for advanced players who know the game and want more challenge. Beware: having these roles in the game will make it more difficult to narrate!',
     [COMPLETE]: 'Complete',
+    [META_ROLES]: 'These roles are not for playing, but are just special markers.'
 }
 
 
@@ -70,8 +73,6 @@ export const NIGHTLY_COLOR = 'rgb(88, 50, 255)'
 export const MORNING_COLOR = 'rgb(200, 175, 50)'
 export const PINK_COLOR = '#CC55AA'
 export const SPECIAL_COLOR = '#444444'
-
-const isWorthBalanceAcceptable = worthBalanceFloat => worthBalanceFloat >= 0 && worthBalanceFloat <= 0.75
 
 export const STRIGOY = 'Strigoy'
 export const EVIL = 'Any Evil'
@@ -679,7 +680,11 @@ export const getRoles = () => {
                     return
                 }
 
-                const { playerName, roundNumber, source } = game.getLastExecution()
+                const lastExecution = game.getLastExecution()
+                if (lastExecution == null) {
+                    return
+                }
+                const { playerName, roundNumber, source } = lastExecution
                 if (roundNumber != game.roundNumber && game.getAlivePlayers().length == 3) {
                     game.winner = 'Townsfolk'
                     return
@@ -1509,7 +1514,8 @@ export const getRoles = () => {
         {
             "name": "Intoxist",
             "difficulty": CUSTOM_TEST,
-            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough) and tomorrow day. Next night, know if your poison did anything to them.",
+            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough), tomorrow day and at the start of next night. Next night, know if your poison did anything to them.",
+            notes: 'You should poison someone before they use their power tonight! Note that your poison also affects next night start powers, like Empath, Undertaker, etc. Then the poison expires immediately after they see their night start information.',
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
@@ -1520,9 +1526,8 @@ export const getRoles = () => {
                     .map(p => p.poisonEffectHistory.length)
                     .reduce((soFar, n) => soFar + n, 0)
                 return nSuccessfulPoisons + me.isDead? 0: 0.75
-
             },
-            onNightStart(game, me) {
+            afterNightStart(game, me) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER
                 }
@@ -1553,11 +1558,8 @@ export const getRoles = () => {
                     return
                 }
                 const chosenPlayer = game.getPlayer(actionData)
-                chosenPlayer?.poison('Intoxicated')
+                chosenPlayer?.poison('Intoxicated', 'afterNightStart')
                 me.chosenPlayerName = chosenPlayer?.name
-            },
-            onDayStart(game, me) {
-                
             }
         },
         {
@@ -1712,22 +1714,26 @@ export const getRoles = () => {
             isEvil: true,
             infoDuration: 'onNightEnd',
             getPower: (game, me) => me.isDead? 0: 3,
-            onSetup(game, player) {
-                const townsfolkNotInGame = randomizeArray(
-                    game.getRolesNotInGame()
-                        .filter(r => !r.isEvil)
-                        .map(r => r.name)
-                    ).slice(0, 3)
-                player.info = {
-                    roles: townsfolkNotInGame,
-                    showsRoleDescriptions: true,
-                    text: 'These roles are <em>not</em> in this game.'
-                }
+            onSetup(game, me) {
+                showMeMyEvilTeammates(game, me)
             },
             onNightStart(game, me) {
-                me.availableAction = {
-                    type: ActionTypes.CHOOSE_PLAYER,
-                    clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                if (game.roundNumber == 1) {
+                    const townsfolkNotInGame = randomizeArray(
+                        game.getRolesNotInGame()
+                            .filter(r => !r.isEvil)
+                            .map(r => r.name)
+                    ).slice(0, 3)
+                    me.info = {
+                        roles: townsfolkNotInGame,
+                        showsRoleDescriptions: true,
+                        text: 'These roles are <em>not</em> in this game.'
+                    }
+                } else {
+                    me.availableAction = {
+                        type: ActionTypes.CHOOSE_PLAYER,
+                        clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                    }
                 }
             },
             actionDuration: 'onNightEnd',
@@ -1864,6 +1870,11 @@ export const getRoles = () => {
             "effect": "Each night*, if no-one died today, choose a player: they die. The 1st time you die, you live but register as dead.",
             isDemon: true,
             isEvil: true,
+        },
+        {
+            "name": "Unknown",
+            "difficulty": META_ROLES,
+            "effect": "This person's role is unknown."
         }
     ]
     for (let i = 0; i < roles.length; i++) {
@@ -2102,6 +2113,19 @@ export function getSortRolesWithPriorityFunction(roles, getRolePriority) {
     return [...rolesWithPrio, ...rolesWithoutPrioSorted]
 }
 
+function showMeMyEvilTeammates(game, me) {
+    const evils = game.getEvils().filter(p => p.name != me.name)
+    me.info = {
+        type: InfoTypes.PLAYERS_WITH_ROLES,
+        text: 'These are your teammates.',
+        buttonText: 'See Teammates',
+        buttonColor: '#eb8034',
+        playersWithRoles: evils.map(p => ({
+            name: p.name,
+            roleName: p.getTrueRole()?.isDemon? p.getTrueRole()?.name: 'Unknown'
+        }))
+    }
+}
 
 
 export function getRole(name) {

@@ -21,6 +21,8 @@
     let domInput
 
     $: displayName = roleName == null? name: `${name} | ${roleName}`
+    $: maybeDeadCls = isDead? 'dead': ''
+    $: saturationCls = isDead? 'desaturated': ''
 
     $: SUBCONTENT_CLASS = isExpanded ? 'subcontent subcontent--expanded' : 'subcontent'
 
@@ -34,8 +36,8 @@
 
 
 <div class="contact shadowed rounded bg-white">
-    <div class="header {isDead? 'dead': ''}">
-        <div class="picture-wrapper" on:click={toggleContent}>
+    <div class="header {maybeDeadCls}">
+        <div class="picture-wrapper {saturationCls}" on:click={toggleContent}>
             <!-- svelte-ignore a11y-missing-attribute -->
             {#if color == null || emoji == null}
                 <img
@@ -47,7 +49,7 @@
             {/if}
         </div>
         <div class="right-wrapper upper-half">
-            <span class="subtitle unselectable" on:click={toggleContent}>{displayName}</span>
+            <span class="subtitle unselectable" style="{isDead? 'color: rgb(228, 57, 57);': ''}" on:click={toggleContent}>{displayName}</span>
         </div>
         {#if roleName != null}
             <div class="picture-wrapper" style="margin-left: 1rem;">

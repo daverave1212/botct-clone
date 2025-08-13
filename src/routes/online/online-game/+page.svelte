@@ -3,6 +3,34 @@
     body {
         overflow: hidden;
     }
+
+    .less-390 {
+        display: none;
+    }
+    .more-390 {
+        display: unset;
+    }
+    .gap-auto {
+        gap: 2vw;
+    }
+    @media (max-width: 390px) {
+        .less-390 {
+            display: unset;
+            font-size: 1.5rem;
+        }
+        .more-390 {
+            display: none;
+        }
+    }
+
+    .me-button {
+        display: block;
+        width: 100%;
+        z-index: -1230132;
+        height: 5vh;
+        margin-top: 0.5rem;
+    }
+    
 </style>
 
 <script>
@@ -496,7 +524,9 @@
                         '🌙 ':
                     $phase == GamePhases.DAY?
                         '☀️ ':
-                    ''
+                    $phase == GamePhases.COUNTDOWN?
+                        '⌛ '
+                    :''
                 }{ $phase?.toUpperCase() }</h1>
                 {#if nSecondsRemaining != null}
                     <h3>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h3>
@@ -504,15 +534,9 @@
             </div>
         {/if}
 
-        <!-- {#if nSecondsRemaining != null}
-            <div style="height: 15vh" class="center-content center-text bg-white rounded">
-                <h1>{nSecondsRemaining < 0? 0: nSecondsRemaining}</h1>
-            </div>
-        {/if} -->
-
         {#each ($playersInRoom ?? []) as player (player.name)}
 
-            <div style="width: 100%" class="flex-row gap-1">
+            <div style="width: 100%" class="flex-column gap-auto">
                 <MinimalContact
                     name={player.name}
                     emoji={player.emoji}
@@ -536,19 +560,25 @@
                     {/if}
                 </MinimalContact>
                 {#if $me.info != null && $me.name == player.name}
-                    <button class="btn blue glow-blink" style="--blink-color: var(--blue-color)" on:click={() => {
+                    {@const text = $me.info.buttonText ?? 'Secret Info'}
+                    {@const color = $me.info.buttonColor ?? 'var(--blue-color)'}
+                    <button class="me-button btn glow-blink" style="--blink-color: {color}; background-color: {color};" on:click={() => {
                         if ($me.info.type == InfoTypes.PLAYERS_WITH_ROLES) {
                             isMyInfoRolesDrawerOpen = true
                         } else {
                             isMyInfoDrawerOpen = true
                         }
-                    }}>Secret Info</button>
+                    }}>
+                        { text }
+                    </button>
                 {/if}
                 {#if $me.availableAction != null && $me.name == player.name}
-                    <button class="btn red glow-blink" on:click={onUsePowerClick}>Use Power</button>
+                    <button class="me-button btn red glow-blink" on:click={onUsePowerClick}>
+                        Use Power!
+                    </button>
                 {/if}
                 {#if $me.role != null && $me.name == player.name}
-                    <button class="btn colorful" on:click={() => {
+                    <button class="me-button btn colorful" on:click={() => {
                         
                         if ($me.hasOnlySecretRolePowers) {
                             roleBeingInspected = myTrueRole
@@ -556,7 +586,9 @@
                             roleBeingInspected = $me.role
                         }
                     
-                    }}>See Role</button>
+                    }}>
+                        See Role
+                    </button>
                 {/if}
             </div>
 
@@ -583,8 +615,6 @@
             Test Toaster
         </button> -->
 
-
-        <h3 class="center-text margin-top-1">To restart the game, open the menu and hit Play. All players are saved.</h3>
     
     </ContactList>   
 </div>

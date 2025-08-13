@@ -1,6 +1,6 @@
 export const GamePhases = {
     NOT_STARTED: 'not-started',
-    COUNTDOWN: 'countdown-starting',
+    COUNTDOWN: 'game starting',
     SETUP: 'setup',
     DAY: 'day',
     NIGHT: 'night'
