@@ -25,6 +25,8 @@ const SOURCE_OF_DEATH_TEMPLATE = {
 
 const INFO_TEMPLATE = {
     type: InfoTypes.ROLES,
+    buttonText: 'Secret Info',
+    buttonColor: null,  // Default is a shade of blue
     roles: ['Professor', 'Investigator'],
     showsRoleDescriptions: false,
     text: ''
@@ -134,13 +136,14 @@ class Player {
         this.statusEffects = this.statusEffects.filter(s => s.name != statusEffectName)
     }
 
-    poison(statusName='Poisoned') {
+    poison(statusName='Poisoned', eventName='afterNightStart') {
+        const clearStatusFunc = (game, me) => {
+            me.removeStatus(statusName)
+        }
         this.statusEffects.push({
             name: statusName,
             isPoisoned: true,
-            onDayEnd(game, me) {
-                me.removeStatus(statusName)
-            }
+            [eventName]: clearStatusFunc
         })
     }
 
@@ -264,6 +267,7 @@ class Game {
         this.#applyAllEventsAt('onDayEnd')
         this.phase = GamePhases.NIGHT
         this.#applyAllEventsAt('onNightStart')
+        this.#applyAllEventsAt('afterNightStart')
     }
     startDay() {
         for (const player of this.playersInRoom) {
@@ -285,9 +289,9 @@ class Game {
     start() {
         this.phase = GamePhases.COUNTDOWN
         this.assignRoles()
+        this.doRolesSetup()
 
         this.doAfterCountdown(this.pregameDuration * 1000, () => {
-            this.doRolesSetup()
             this.goToNightThenDayAsync()
         })
     }
@@ -302,11 +306,18 @@ class Game {
             this.playersInRoom[i].role = rolesToAssign[i]
         }
 
+        if (IS_DEBUG) {
+            const imp = this.playersInRoom.find(p => p.role?.name == 'Imp')
+            const impRole = imp.role
+            imp.role = this.playersInRoom[0].role
+            this.playersInRoom[0].role = impRole
+        }
+
         this.#applyAllEventsAt('onAssignRole')
 
         if (IS_DEBUG) {
-            this.playersInRoom[0].assignRoleLater(this, 'Spy')
-            this.playersInRoom[1].assignRoleLater(this, 'Recluse')
+            // this.playersInRoom[0].assignRoleLater(this, 'Imp')
+            // this.playersInRoom[1].assignRoleLater(this, 'Recluse')
         }
 
         this.#applyAllEventsAt('afterAssignRole')
@@ -420,18 +431,21 @@ class Game {
         return this.playersInRoom.find(p => p.isDemon)
     }
     getLastExecutedPlayer() {
-        for (let i = this.killHistory.length - 1; i >= 0; i--) {
-            const { playerName, source } = this.killHistory[i]
-            if (source.type == SourceOfDeathTypes.EXECUTION) {
+        const usedHistory = this.history?.filter(e => e != null) ?? []
+        for (let i = usedHistory?.length - 1; i >= 0; i--) {
+            const { playerName, source } = usedHistory[i]
+            if (source?.type == SourceOfDeathTypes.EXECUTION) {
                 return this.getPlayer(playerName)
             }
         }
         return null
     }
     getLastExecution() {
+        const usedHistory = this.history?.filter(e => e != null) ?? []
         for (let i = this.killHistory.length - 1; i >= 0; i--) {
-            const { playerName, source } = this.killHistory[i]
-            if (source.type == SourceOfDeathTypes.EXECUTION) {
+            console.log({i})
+            const { playerName, source } = usedHistory[i]
+            if (source?.type == SourceOfDeathTypes.EXECUTION) {
                 return this.killHistory[i]
             }
         }
@@ -659,7 +673,6 @@ class Game {
                 this.playersInRoom[playerIndex] = new Player(playerTemplate, this.roomCode)
             }
 
-            console.log(`Getting player ${playerName} from players ${this.playersInRoom.map(p => p.name).join(', ')}`)
             const player = this.getPlayer(playerName)
             player.role = getRole(arr[i])
         }

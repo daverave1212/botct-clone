@@ -14,6 +14,12 @@
 
     font-family: Arial, Helvetica, sans-serif;
 }
+@media (max-width: 390px) {
+    .contact {
+        padding-left: 3.25vw;
+        padding-right: 3.25vw;
+    }
+}
 .contact--mod {
     padding: 0px;
     height: var(--mod-contact-header-height);
@@ -126,7 +132,7 @@
 
 .dead .upper-half {
     text-decoration: line-through;
-    color: rgb(228, 57, 57);
+    color: rgb(228, 57, 57) !important;
 }
 .dead .picture-wrapper img {
     filter: grayscale(1);

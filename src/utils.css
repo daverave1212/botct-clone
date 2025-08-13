@@ -5,6 +5,12 @@
     padding: 1.25rem;
     padding-bottom: 10vh;
 }
+@media (max-width: 390px) {
+    .page {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
 .page.center-text {
     text-align: center;
 }
@@ -221,6 +227,9 @@
     --blink-color: var(--red-color);
     box-shadow: 0 0 2px var(--blink-color);
     animation: glowBlink 1.5s linear infinite;
+}
+.desaturated {
+    filter: grayscale(1);
 }
 
 @keyframes glowBlink {

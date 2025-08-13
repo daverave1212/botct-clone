@@ -1,23 +1,24 @@
 
 <style>
-.grid {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 8px 16px; /* row gap, column gap */
-  align-items: center;
-}
+    .grid {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px 16px; /* row gap, column gap */
+        align-items: center;
+    }
 </style>
 
 <script>
     import SafeButton from "../../../components-standalone/SafeButton.svelte";
-import { fetchGame } from "../../../lib/online-utils";
-    import { customScripts } from "../../../stores/custom-scripts-store";
+    import { fetchGame } from "../../../lib/online-utils";
+    import { customScripts, getCustomScriptRoleNames } from "../../../stores/custom-scripts-store";
     import { me } from "../../../stores/online/local/me";
     import { roomCode } from "../../../stores/online/local/room";
+    import { goto } from '$app/navigation';
 
-    let selectedScriptName = null
+    let selectedScriptName = Object.keys($customScripts)[0]
     
-    let pregameDuration = 10
+    let pregameDuration = 5
     let nightDuration = 45
 
     async function onCreateGame() {
@@ -44,10 +45,10 @@ import { fetchGame } from "../../../lib/online-utils";
     
     <div class="grid margin-top-2">
         <label>Pregame Duration</label>
-        <input type="range" bind:value={pregameDuration} min="10" max="120" step="5" />
+        <input type="range" bind:value={pregameDuration} min="5" max="120" step="5" />
         <span class="value" aria-hidden="true">{pregameDuration}</span>
         <label>Night Duration</label>
-        <input type="range" bind:value={nightDuration} min="10" max="120" step="5" />
+        <input type="range" bind:value={nightDuration} min="5" max="120" step="5" />
         <span class="value" aria-hidden="true">{nightDuration}</span>
     </div>
 
