@@ -600,7 +600,13 @@ export const getRoles = () => {
             "effect": "You start knowing that 1 of 2 players is a particular Outsider. (Or that zero are in play.)",
             getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup: function(game, player) {
-                let randomOutsider = randomFrom(game.getOutsiders(), { prefer: p => !p.isRegisteredAsEvil()})
+                const outsiders = game.getOutsiders()
+                if (outsiders.length == null) {
+                    player.info = { text: 'Zero Outsiders are in play.' }
+                    return
+                }
+
+                let randomOutsider = randomFrom(outsiders, { prefer: p => !p?.isRegisteredAsEvil()})
                 let outsiderRoleName = randomOutsider.getTrueRole()?.name
                 
                 if (player.isDrunkOrPoisoned()) {
@@ -612,13 +618,13 @@ export const getRoles = () => {
                 }
 
                 if (randomOutsider == null) {
-                    player.info = { text: 'There are no Outsiders in this game.' }
+                    player.info = { text: 'Zero Outsiders are in play.' }
                     return
                 }
 
                 const randomTownsfolk = randomOf(...game.getPlayersExcept([player.name, randomOutsider.name]))
                 if (randomTownsfolk == null) {
-                    player.info = null
+                    player.info = { text: `No other players are in game.` }
                     return
                 }
                 
@@ -628,6 +634,25 @@ export const getRoles = () => {
                     roles: [outsiderRoleName],
                     text: `Either <em>${playersDisplayed[0]?.name}</em> or <em>${playersDisplayed[1]?.name}</em> is this role.`
                 }
+            },
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestGame()
+                const testWith = (text, testFunc) => {
+                    this.onSetup(game, game.getPlayerAt(0))
+                    test(text, testFunc(game.getPlayerAt(0)))
+                }
+                const hasInfo = () => game.getPlayerAt(0)?.info?.text != null
+                const hasEitherInfo = () => game.getPlayerAt(0)?.info?.text?.includes('Either') && game.getPlayerAt(0)?.info?.text?.includes('undefined') && game.getPlayerAt(0)?.info?.text?.includes('null')
+                
+                game.setPlayersAndRoles(['Librarian', 'Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
+                testWith(`No outsider`, player => player.info?.text == `Zero Outsiders are in play.` && hasInfo())
+                
+
+                game.setPlayersAndRoles(['Librarian', 'Fool', 'Fool', 'Fool', 'Saint', 'Fool'])
+                testWith(`One saint`, player =>
+                    hasEitherInfo()
+                    && player.info.roles.some(r => r == 'Saint')
+                )
             }
         },
         {
@@ -695,8 +720,6 @@ export const getRoles = () => {
                     type: ActionTypes.CHOOSE_PLAYER,
                     clientDuration: ActionDurations.UNTIL_USED_OR_DAY
                 }
-                console.log(`!!! Did set my available action to: `)
-                console.log(me.availableAction)
             },
             onDayStart(game, player) {
                 const me = game.getPlayer(player?.name || player)
@@ -709,7 +732,6 @@ export const getRoles = () => {
                 if (me.isDrunkOrPoisoned()) {
                     return
                 }
-                console.log(`Doing plaer action upon ${actionData}`)
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
                 chosenPlayer.statusEffects.push({
                     name: 'Protected',
@@ -992,7 +1014,6 @@ export const getRoles = () => {
             actionDuration: 'onDayEnd',
             getPower: (game, me) => me.isDead? 0: 1,
             onDeath(source, me, game) {
-                console.log(`Miau miau VIRGOO`)
                 if (source.type != SourceOfDeathTypes.EXECUTION) {
                     return true
                 }
@@ -1092,7 +1113,6 @@ export const getRoles = () => {
                 const rolesNotUsed = game.getRolesNotInGame()
                 const goodRolesNotInGame = rolesNotUsed.filter(r => r.isEvil != true && r.isOutsider != true)
                 const myNewRole = randomOf(...goodRolesNotInGame)
-                console.log(`My new role: ${myNewRole?.name}`)
                 me.assignRoleLater(game, myNewRole)
                 me.secretRole = getRole('Drunk')
                 me.addStatus({  // Permanent drunkness
@@ -1705,7 +1725,6 @@ export const getRoles = () => {
                 }
             },
             onNightStart(game, me) {
-                console.log(`Adding a new power`)
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER,
                     clientDuration: ActionDurations.UNTIL_USED_OR_DAY
@@ -2075,8 +2094,6 @@ export function getNightlyRolePriority(roleOrRoleName) {
 }
 
 export function getSortRolesWithPriorityFunction(roles, getRolePriority) {
-    console.log('SORTING')
-
     const rolesSortedByPrio = roles.sort((a, b) => getRolePriority(a) - getRolePriority(b))
     const rolesWithPrio = rolesSortedByPrio.filter(role => getRolePriority(role) != NO_PRIORITY)
     const rolesWithoutPrio = rolesSortedByPrio.filter(role => getRolePriority(role) == NO_PRIORITY)
@@ -2095,7 +2112,6 @@ export function getRoleByI(i) {
 }
 
 export function getRoleNumbersByPlayers(nPlayers) {
-    console.log(nPlayers)
     const roleNumbersTable = {
         /* Townsfolk    Outsiders Minions    Demons */
         3: [2,          0,        0,          1],

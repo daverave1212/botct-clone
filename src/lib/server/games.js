@@ -75,7 +75,6 @@ class Player {
     }
 
     assignRoleLater(game, role, options = {}) {
-        console.log(`Attempting to assign role ${role} to player ${this.name}`)
         const { ignoreAssignEvent } = options 
         role = role.name == null? getRole(role): role
         this.role = role
@@ -355,7 +354,6 @@ class Game {
     getPlayers() { return this.playersInRoom }
     getPlayersExcept(nameOrNames) { 
         const names = Array.isArray(nameOrNames)? nameOrNames: [nameOrNames]
-        console.log(`CHecking names: ${names.join(', ')}`)
         return this.playersInRoom.filter(p => !names.includes(p.name))
     }
     getPlayerAt(i) {
@@ -667,9 +665,13 @@ class Game {
         }
     }
     setPlayersAndRoles(arr) {
+        this.playersInRoom = []
         for (let i = 0; i < arr.length; i++) {
             addPlayerToGameST({ src: '/images/role-thumbnails/Alchemist.webp', name: 'Player' + i }, this.roomCode)
-            this.playersInRoom[i].role = getRole(arr[i])
+            this.playersInRoom[i].assignRoleLater(this, getRole(arr[i]), { ignoreAssignEvent: true })
+        }
+        for (const player of this.playersInRoom) {
+            player.role?.afterAssignRole?.(this, player)
         }
     }
 
