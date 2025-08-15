@@ -31,7 +31,7 @@
     import { onMount } from "svelte";
     import { clearCanvas, clearRect, drawImageOnCanvasAsync, drawText, drawTextLines, drawTextWordsWithHTML } from "../../lib/utils";
     import RoleChooserDrawer from "../../components/RoleChooserDrawer.svelte";
-    import { EVIL_COLOR, getEvent, getLocationCards, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, EVILS } from "$lib/shared-lib/SharedDatabase";
+    import { EVIL_COLOR, getEvent, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, EVILS } from "$lib/shared-lib/SharedDatabase";
     import { getMods } from "../../lib/ModsDatabase";
 
     const cardWidth = 756
@@ -39,7 +39,6 @@
 
     const allRoles = getSortRolesWithPriorityFunction(getRoles(), getNormalRolePriority)
     const allMods = getMods()
-    const allEvents = getLocationCards()
 
     let canvasDiv
     let cardCanvas
@@ -165,7 +164,7 @@
         getEvent("Stakes and Crosses"),
         getEvent("Omen"),
         getEvent("Ambush"),
-        ...getLocationCards()
+        // ...getLocationCards()
     ]
 
     let isLoading = false
@@ -188,7 +187,7 @@
                 getRole('Peasant'),
                 ...getRoles().filter(role => role.name != 'Peasant' && role.name != 'Strigoy' && role.name != 'Cultist'),
                 // ...getMods(),
-                ...getLocationCards()
+                // ...getLocationCards()
             ]
             allRolesAndMods = __allRolesAndMods // TODO: REMOVE THIS
             
@@ -229,7 +228,7 @@
 <div class="flex-content padded center">
     <button class="btn colorful" on:click={() => { roleChooserObjects = allMods; isRoleChooserOpen = true}}>Open Mods</button>
     <button class="btn blue" on:click={() => { roleChooserObjects = allRoles; isRoleChooserOpen = true }}>Open Roles</button>
-    <button class="btn" style={`background-color: ${SPECIAL_COLOR};`} on:click={() => { roleChooserObjects = allEvents; isRoleChooserOpen = true }}>Open Events</button>
+    <!-- <button class="btn" style={`background-color: ${SPECIAL_COLOR};`} on:click={() => { roleChooserObjects = allEvents; isRoleChooserOpen = true }}>Open Events</button> -->
 </div>
 <div class="flex-content center">
     <button class="btn colorful" on:click={() => generatePrints()}>Generate Prints</button>
