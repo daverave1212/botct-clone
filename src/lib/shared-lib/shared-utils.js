@@ -28,10 +28,50 @@ export function randomizeArray(array_a){
     }
     return array_a
 }
-export function test(msg, condition) {
+
+
+let currentTestsData = {
+    name: '',
+    failures: []
+}
+export function startTesting() {
+    currentTestsData = {
+        name: '',
+        failures: []
+    }
+}
+export function setCurrentTest(name) {
+    console.log('')
+    console.log(`🆗 Running tests for ${name}`)
+    currentTestsData.name = name
+}
+export function test(msg, condition, failMessage=null) {
     if (condition) {
-        console.log(`✅ ${msg}`)
+        console.log(`  ✅ ${msg}`)
     } else {
-        console.log(`❌ ${msg}`)
+        const finalMessage = `  ❌ ${msg}${failMessage != null? ': ' + failMessage: ''}`
+        console.log(`${finalMessage}`)
+        currentTestsData.failures.push(`${currentTestsData.name}: ${finalMessage}`)
+    }
+}
+// Fail is acceptable
+export function maybeTest(msg, condition, failMessage=null) {
+    if (condition) {
+        console.log(`  ✅ ${msg}`)
+    } else {
+        const finalMessage = `  🔶 ${msg}${failMessage != null? ': ' + failMessage: ''}`
+        console.log(finalMessage)
+        currentTestsData.failures.push(`${currentTestsData.name}: ${finalMessage}`)
+    }
+}
+export function printTestResults() {
+    console.log('')
+    if (currentTestsData.failures.length == 0) {
+        console.log(`No failed tests 💚`)
+    } else {
+        console.log(`⭕ ${currentTestsData.failures.length} failed tests:`)
+        for (const msg of currentTestsData.failures) {
+            console.log(`${msg}`)
+        }
     }
 }

@@ -70,7 +70,7 @@ class Player {
 
     inspectRole() {
         const trueRole = this.getTrueRole()
-        if (true?.onInspected != null) {
+        if (trueRole?.onInspected != null) {
             return trueRole.onInspected(this)
         }
         return trueRole
@@ -362,12 +362,16 @@ class Game {
 
     getScriptRoleObjects() { return this.scriptRoleNames.map(rn => getRole(rn)) }
     getScriptEvilRoleNames() { return this.getScriptRoleObjects().filter(r => r.isEvil).map(r => r.name) }
+    getScriptGoodRoleNames() { return this.getScriptRoleObjects().filter(r => !r.isEvil).map(r => r.name) }
     getPlayers() { return this.playersInRoom }
     getPlayersExcept(nameOrNames) { 
         const names = Array.isArray(nameOrNames)? nameOrNames: [nameOrNames]
         return this.playersInRoom.filter(p => !names.includes(p.name))
     }
     getPlayerAt(i) {
+        return this.playersInRoom[i]
+    }
+    at(i) {
         return this.playersInRoom[i]
     }
 
@@ -409,6 +413,9 @@ class Game {
     getPlayersThatRegisterAsEvil() {
         return randomizeArray(this.playersInRoom.filter(p => p.isRegisteredAsEvil()))
     }
+    getPlayersThatRegisterAsGood() {
+        return randomizeArray(this.playersInRoom.filter(p => !p.inspectRole().isEvil || p.changedAlignment == 'evil'))
+    }
     getAlivePlayers() {
         return this.playersInRoom.filter(p => !p.isDead)
     }
@@ -431,7 +438,7 @@ class Game {
         return this.playersInRoom.find(p => p.isDemon)
     }
     getLastExecutedPlayer() {
-        const usedHistory = this.history?.filter(e => e != null) ?? []
+        const usedHistory = this.killHistory?.filter(e => e != null) ?? []
         for (let i = usedHistory?.length - 1; i >= 0; i--) {
             const { playerName, source } = usedHistory[i]
             if (source?.type == SourceOfDeathTypes.EXECUTION) {
@@ -441,12 +448,12 @@ class Game {
         return null
     }
     getLastExecution() {
-        const usedHistory = this.history?.filter(e => e != null) ?? []
-        for (let i = this.killHistory.length - 1; i >= 0; i--) {
+        const usedHistory = this.killHistory?.filter(e => e != null) ?? []
+        for (let i = usedHistory.length - 1; i >= 0; i--) {
             console.log({i})
             const { playerName, source } = usedHistory[i]
             if (source?.type == SourceOfDeathTypes.EXECUTION) {
-                return this.killHistory[i]
+                return usedHistory[i]
             }
         }
         return null
@@ -495,6 +502,7 @@ class Game {
         }
         return prevI
     }
+    
     getRolesNotInGame() {   // Includes secret roles
         const playerRoleNames = this.playersInRoom.map(p => p.role.name)
         const cleanedPlayerRoleNames = playerRoleNames.filter(rn => rn != null) // For safety
@@ -504,6 +512,12 @@ class Game {
         return this.scriptRoleNames
             .filter(rn => !isRoleInGame(rn))
             .map(rn => getRole(rn))
+    }
+    getEvilsNotInGame() {
+        return this.getRolesNotInGame().filter(r => r.isEvil)
+    }
+    getGoodsNotInGame() {
+        return this.getRolesNotInGame().filter(r => !r.isEvil)
     }
     getRolesInGame() {
         return this.playersInRoom.map(p => p.getTrueRole())
@@ -618,10 +632,11 @@ class Game {
             return 400
         }
         if (p.availableAction == null) {    // Prevent multiple requests
-            return 200
+            return 401
         }
         player.availableAction = null
         actionFunc(this, player, actionData)
+        return 200
     }
 
 
@@ -687,6 +702,36 @@ class Game {
             player.role?.afterAssignRole?.(this, player)
         }
     }
+    _atHasInfoWith(i, text=null) {
+        const player = this.getPlayerAt(i)
+        const info = player?.info
+        if (info == null) {
+            return false
+        }
+        if (text == null) {
+            return true
+        }
+        if (info.roles != null) {
+            if (info.roles.includes == null) {
+                return false
+            }
+            if (info.roles.includes('undefined')) {
+                console.error(`Player at ${i} has undefined info role!`)
+                return false
+            }
+            if (info.roles.includes('Object')) {
+                console.error(`Player at ${i} has Object info role instead of role name!`)
+                return false
+            }
+        }
+        for (const key of Object.keys(info)) {
+            const value = info[key]
+            if (value.includes?.(text)) {   // Array or string
+                return true
+            }
+        }
+        return false
+    }
 
 }
 
@@ -698,10 +743,39 @@ export function createNewGame(player) {
     return game
 }
 
-export function makeTestGame() {
+export function makeTestTBGame() {
     const player = { name: 'Dave', src: 'none.png' }
     const game = new Game(player.name)
     games[game.roomCode] = game
+    game.scriptName = 'Trouble Brewing Modified'
+    game.scriptRoleNames = [
+        'Librarian',
+        'Investigator',
+        'Chef',
+        'Washerwoman',
+        
+        'Empath',
+        'Dreamer',
+        'Monk',
+        'Undertaker',
+        'Soldier',
+        'Ravenkeeper',
+        'Virgo',
+        'Slayer',
+        'Mayor',
+
+        'Saint',
+        'Drunk',
+        'Moonchild',
+        'Recluse',
+
+        'Scarlet Woman',
+        'Baron',
+        'Intoxist',
+        'Spy',
+
+        'Imp'
+    ]
 
     return game
 }

@@ -217,7 +217,7 @@ export const getRoles = () => {
                 }
             },
             test() {
-                const game = makeTestGame()
+                const game = makeTestTBGame()
                 game.setPlayersAndRoles(['Spy', 'Fool', 'Fool', 'Fool', 'Imp'])
                 const player = game.getPlayerAt(1)
                 
@@ -329,7 +329,7 @@ export const getRoles = () => {
                 }
             },
             test() {
-                const game = makeTestGame()
+                const game = makeTestTBGame()
                 const player = game.getPlayerAt(1)
                 
                 game.reset().setPlayersAndRoles(['Spy', 'Empath', 'Fool', 'Fool', 'Imp'])
@@ -456,7 +456,7 @@ export const getRoles = () => {
                 })
             },
             test() {
-                const game = makeTestGame()
+                const game = makeTestTBGame()
                 game.setPlayersAndRoles(['Grandmother', 'Washerwoman', 'Undertaker', 'Investigator', 'Imp', 'Monk', 'Ravenkeeper'])
                 game.doRolesSetup()
 

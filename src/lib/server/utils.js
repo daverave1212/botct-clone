@@ -88,8 +88,3 @@ export function repeat(times, func) {
         func(i)
     }
 }
-export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to return true; */
-    var c = randomInt(1, 100);
-    if(c <= chance) return true;
-    return false;
-}
