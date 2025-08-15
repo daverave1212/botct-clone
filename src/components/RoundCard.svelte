@@ -11,7 +11,7 @@
 
     export let name
     export let src
-    export let isValud = true
+    export let isValid = true
     export let hasRibbon = true
     export let hasBadge = true
 
