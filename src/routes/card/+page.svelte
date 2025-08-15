@@ -31,7 +31,7 @@
     import { onMount } from "svelte";
     import { clearCanvas, clearRect, drawImageOnCanvasAsync, drawText, drawTextLines, drawTextWordsWithHTML } from "../../lib/utils";
     import RoleChooserDrawer from "../../components/RoleChooserDrawer.svelte";
-    import { EVIL_COLOR, getEvent, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, EVILS } from "$lib/shared-lib/SharedDatabase";
+    import { EVIL_COLOR, getNormalRolePriority, getRole, getRoles, getSortRolesWithPriorityFunction, SPECIAL_COLOR, EVILS } from "$lib/shared-lib/SharedDatabase";
     import { getMods } from "../../lib/ModsDatabase";
 
     const cardWidth = 756
@@ -161,9 +161,9 @@
     ]
     const __allRolesAndMods = [
         ...__DEBUG__ROLES.map(roleName => getRole(roleName)),
-        getEvent("Stakes and Crosses"),
-        getEvent("Omen"),
-        getEvent("Ambush"),
+        // getEvent("Stakes and Crosses"),
+        // getEvent("Omen"),
+        // getEvent("Ambush"),
         // ...getLocationCards()
     ]
 
