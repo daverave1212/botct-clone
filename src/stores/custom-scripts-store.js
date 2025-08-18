@@ -12,35 +12,38 @@ const DEFAULT_SCRIPTS = {
         'Librarian',
         'Investigator',
         'Chef',
-        'Clockmaker',
-        'Grandmother',  // Somewhat tested
-        'Noble',        // Not tested
+        'Grandmother',
         
         'Empath',
         'Dreamer',
         'Monk',
         'Undertaker',
-        'Fool',
         'Soldier',
-        'Ravenkeeper',      // Not tested
-        'Virgo',            // Not tested
-        'General',          // Not tested
+        'Ravenkeeper',
         'Slayer',           // Not tested
         'Mayor',            // Not tested
-
+        
         'Saint',
         'Drunk',
         'Moonchild',
-        'Mutant',
         'Recluse',          // Is a special case on a case by case basis..
-
+        
         'Scarlet Woman',
         'Baron',
         'Intoxist',         // Not implemented
+        'Spy',              // Is a special case on a case by case basis..
+        
+        'Imp',
+        
+        
+        // Not in script
+        'General',          // Not tested
+        'Clockmaker',
+        'Fool',
+        'Noble',        // Not tested
+        'Virgo',            // Not tested
+        'Mutant',
         'Assassin',         // Not tested
-        'Spy',
-
-        'Imp'
     ]
 }
 

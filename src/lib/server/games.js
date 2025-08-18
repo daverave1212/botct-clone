@@ -4,6 +4,7 @@ import { InfoTypes } from "$lib/shared-lib/GamePhases"
 import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "$lib/shared-lib/SharedDatabase"
 import { createRandomCode, popArrayElementFind, randomOf, randomizeArray, swapElementsAt } from "./utils"
 import { randomInt } from "crypto"
+import { percentChance } from "$lib/shared-lib/shared-utils"
 
 
 const IS_DEBUG = true
@@ -153,7 +154,7 @@ class Player {
     }
 
     hasStatus(name) {
-        return this.statusEffects.find(se => se.name == name) != null
+        return this.statusEffects.some(se => se.name == name)
     }
 
     applyAllMyDeathEventsAt(game, eventName, source) {
@@ -170,7 +171,6 @@ class Player {
 
         // console.log(`Killing through role onDeath...`)
         if (usedRole?.[eventName] != null) {
-            console.log(`Doing ${player.name} onDeath`)
             const shouldContinue = usedRole[eventName](source, player, game)
             if (shouldContinue == false) {
                 return false
@@ -501,6 +501,27 @@ class Game {
             prevI = this.playersInRoom.length - 1
         }
         return prevI
+    }
+
+    getRandomEvilRoleNameInScript() {
+        return randomOf(...(this.getScriptRoleObjects().filter(r => r.isEvil))).name
+    }
+    getRandomTownsfolkRoleAsPoisoned() {
+        if (percentChance(50) && this.isRoleInScript('Drunk')) {
+            return 'Drunk'
+        }
+        return this.getRandomEvilRoleNameInScript()
+    }
+    getRandomGoodRoleAsPoisoned() {
+        const goodRolesNotInGame = this.getGoodsNotInGame()
+        if (percentChance(50) && this.isRoleInScript('Drunk')) {
+            return 'Drunk'
+        }
+        if (goodRolesNotInGame.length == 0) {
+            return randomOf(...this.getScriptGoodRoleNames())
+        } else {
+            return randomOf(...goodRolesNotInGame).name
+        }
     }
     
     getRolesNotInGame() {   // Includes secret roles

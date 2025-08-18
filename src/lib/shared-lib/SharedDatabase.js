@@ -543,30 +543,53 @@ export const getRoles = () => {
             },
             "effect": "You start knowing a good player & their character. If the Demon kills them, you die too.",
             infoDuration: 'onNightEnd',
-            onSetup: function(game, player) {
-                const townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
-                if (townsfolks.length == 0) {
+            onNightStart: function(game, player) {
+                if (player.didUsePower) {
+                    return
+                }
+                player.didUsePower = true
+                let townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
+
+                if (player.isDrunkOrPoisoned()) {
+                    townsfolks = game.getPlayersExcept([player.name])
+                }
+
+                let chosenPlayer = randomOf(...townsfolks)
+                let roleName = chosenPlayer?.inspectRole()?.name
+
+                if (player.isDrunkOrPoisoned()) {
+                    if (chosenPlayer.isOutsider()) {
+                        roleName = game.getRandomEvilRoleNameInScript()
+                    } else if (chosenPlayer.isTownsfolk()) {
+                        roleName = game.getRandomTownsfolkRoleAsPoisoned()
+                    } else {
+                        roleName = game.getRandomGoodRoleAsPoisoned()
+                    }
+                }
+
+                if (roleName == null || chosenPlayer == null) {
                     player.info = {
                         text: 'You do not have a grandson.'
                     }
                     return
                 }
 
-                const randomTownsfolk = randomOf(...townsfolks)
-
                 player.info = {
-                    roles: [randomTownsfolk.inspectRole()?.name],
-                    text: 'This is your grandson.'
+                    roles: [roleName],
+                    text: `<em>${chosenPlayer.name}</em> is your grandson and it's this role.`
                 }
 
                 if (player.isDrunkOrPoisoned()) {
                     return
                 }
 
-                randomTownsfolk.statusEffects.push({
+                chosenPlayer.statusEffects.push({
                     name: 'Grandson',
                     duration: StatusEffectDuration.PERMANENT,
                     onDeath(source) {
+                        if (player.isDrunkOrPoisoned()) {
+                            return true
+                        }
                         if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
                             game.tryKillPlayer(player, { type: SourceOfDeathTypes.OTHER })
                         }
@@ -575,16 +598,23 @@ export const getRoles = () => {
                 })
             },
             test(testingInjectable) {
-                const game = testingInjectable.makeTestTBGame()
+                const getGrandson = () => game.playersInRoom.find(p => p.statusEffects.some(se => se.name == 'Grandson'))
+                let game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Grandmother', 'Washerwoman', 'Undertaker', 'Investigator', 'Imp', 'Monk', 'Ravenkeeper'])
                 game.doRolesSetup()
+                game.startNight()
+                test(`Normal - Grandma has info`, game._atHasInfoWith(0, 'is your grandson'))
+                game.tryKillPlayer(getGrandson().name, { type: SourceOfDeathTypes.DEMON_KILL })
+                game.startDay()
+                test(`Normal - Grandma is dead`, game.getPlayerAt(0).isDead)
 
-                const grandsonPlayerI = game.playersInRoom.findIndex(p => p.statusEffects.find(se => se.name == 'Grandson') != null)
-                const grandsonPlayer = game.getPlayerAt(grandsonPlayerI)
-
-                game.tryKillPlayer(grandsonPlayer.name, { type: SourceOfDeathTypes.DEMON_KILL })
-
-                test(`Grandma player is dead`, game.getPlayerAt(0).isDead)
+                game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Grandmother', 'Washerwoman', 'Undertaker', 'Imp'])
+                game.doRolesSetup()
+                game.at(0).poison('Poisoned', 'never')
+                game.startNight()
+                test(`Poisoned - Grandma has info`, game._atHasInfoWith(0, 'is your grandson'))
+                test(`Poisoned - Grandson not exist`, getGrandson() == null)
             }
         },
         {
@@ -965,7 +995,7 @@ export const getRoles = () => {
 
                 if (me.isDrunkOrPoisoned()) {
                     if (chosenPlayer.isOutsider()) {
-                        roleName = getRandomEvilNameInScript()
+                        roleName = game.getRandomEvilRoleNameInScript()
                     } else if (chosenPlayer.isTownsfolk()) {
                         if (percentChance(50) && game.isRoleInScript('Drunk')) {
                             roleName = 'Drunk'
@@ -973,12 +1003,7 @@ export const getRoles = () => {
                             roleName = getRandomEvilNameInScript()
                         }
                     } else {
-                        const goodRolesNotInGame = game.getGoodsNotInGame()
-                        if (goodRolesNotInGame.length == 0) {
-                            roleName = randomOf(...game.getScriptGoodRoleNames())
-                        } else {
-                            roleName = randomOf(...goodRolesNotInGame).name
-                        }
+                        roleName = game.getRandomGoodRoleAsPoisoned()
                     }
                 }
 
@@ -1270,7 +1295,7 @@ export const getRoles = () => {
         {
             "name": "Virgo",
             "difficulty": CUSTOM_TEST,
-            "effect": "The 1st time you are executed, you don't die and choose a player. If they are a Townsfolk, they die tonight.",
+            "effect": "The 1st time you are executed, choose who was the nominator on the app. If the nominator was a Townsfolk, they are executed immediately.",
             actionDuration: 'onDayEnd',
             getPower: (game, me) => me.isDead? 0: 1,
             onDeath(source, me, game) {
@@ -1296,6 +1321,12 @@ export const getRoles = () => {
                 if (!chosenPlayer.isEvil() && chosenPlayer.isOutsider()) {
                     return
                 }
+                if (me.isDrunkOrPoisoned()) {
+                    return
+                }
+
+                game.tryKillPlayer(chosenPlayer)
+
                 chosenPlayer.addStatus({
                     name: 'Virgoed',
                     onNightEnd() {
@@ -1503,9 +1534,35 @@ export const getRoles = () => {
                 if (chosenPlayer.isDead) {
                     return
                 }
-                if (!chosenPlayer.isEvil()) {
-                    game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+                if (me.isDrunkOrPoisoned()) {
+                    return
                 }
+                if (!chosenPlayer.isEvil()) {
+                    chosenPlayer.addStatus({
+                        name: 'Moonchilded',
+                        onNightEnd() {
+                            game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.OTHER })
+                        }
+                    })
+                }
+            },
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestTBGame()
+                
+                game.setPlayersAndRoles(['Imp', 'Moonchild', 'Moonchild', 'Moonchild', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                
+                game.tryKillPlayer(game.at(1), { type: SourceOfDeathTypes.EXECUTION })
+                test(`On evil has power`, game.at(1).availableAction != null)
+                game.onPlayerActionST({}, game.at(1), game.at(0))
+                test(`Evil should be alive`, !game.at(0).isDead)
+
+                game.at(2).poison()
+                game.tryKillPlayer(game.at(2), { type: SourceOfDeathTypes.EXECUTION })
+                test(`Poisoned - has power`, game.at(2).availableAction != null)
+                game.onPlayerActionST({}, game.at(1), game.at(0))
+                test(`Poisoned - should be alive`, !game.at(0).isDead)
+                
             }
         },
         {
@@ -1593,9 +1650,32 @@ export const getRoles = () => {
             ribbonText: "OUTSIDER",
             isOutsider: true,
             afterDeath(source, me, game) {
-                if (source.type != SourceOfDeathTypes.EXECUTION) {
+                if (me.isDrunkOrPoisoned()) {
+                    return
+                }
+                if (source.type == SourceOfDeathTypes.EXECUTION) {
                     game.winner = 'Evil'
                 }
+            },
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestTBGame()
+                
+                game.setPlayersAndRoles(['Imp', 'Saint', 'Saint', 'Saint', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                
+                game.tryKillPlayer(game.at(1), { type: SourceOfDeathTypes.EXECUTION })
+                test(`Normal execution`, game.at(1).isDead && game.winner == 'Evil', `
+                    Is dead: ${game.at(1).isDead}
+                    winner: ${game.winner}
+                `)
+
+                game.winner = null
+                game.at(2).poison()
+                game.tryKillPlayer(game.at(2), { type: SourceOfDeathTypes.EXECUTION })
+                test(`Poisoned`, game.at(2).isDead && game.winner == null, `
+                    Is dead: ${game.at(2).isDead}
+                    winner: ${game.winner}
+                `)
             }
         },
         {
@@ -1698,6 +1778,18 @@ export const getRoles = () => {
 
                 goodPlayers[0].assignRoleLater(game, rolesToUse[0])
                 goodPlayers[1].assignRoleLater(game, rolesToUse[1])
+            },
+            test(testingInjectable) {
+                let game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Imp', 'Baron', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                test(`Normal`, game.winner == null && game.at(2).getTrueRole().isOutsider && game.at(3).getTrueRole().isOutsider)
+
+                game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Imp', 'Baron', 'Saint', 'Moonchild', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                test(`Drunk is ok`, game.at(4).hasStatus('Drunk') || game.at(5).hasStatus('Drunk'))
+                test(`Recluse is ok`, !game.at(4).inspectRole().isOutsider || !game.at(5).inspectRole().isOutsider)
             }
         },
         {
@@ -1824,8 +1916,8 @@ export const getRoles = () => {
         {
             "name": "Intoxist",
             "difficulty": CUSTOM_TEST,
-            "effect": "Each night, choose a player: they are poisoned tonight (if you're fast enough), tomorrow day and at the start of next night. Next night, know if your poison did anything to them.",
-            notes: 'You should poison someone before they use their power tonight! Note that your poison also affects next night start powers, like Empath, Undertaker, etc. Then the poison expires immediately after they see their night start information.',
+            "effect": "On game start and every night* (if you're quick enough), choose a player: they are poisoned until you die or poison someone else.",
+            notes: 'You should poison someone before they use their power!',
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
@@ -1837,39 +1929,55 @@ export const getRoles = () => {
                     .reduce((soFar, n) => soFar + n, 0)
                 return nSuccessfulPoisons + me.isDead? 0: 0.75
             },
-            afterNightStart(game, me) {
+            onSetup(game, me) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER
                 }
+            },
+            afterNightStart(game, me) {
                 if (game.roundNumber == 1) {
-                    return
+                    me.availableAction = null
                 }
-                if (me.chosenPlayerName != null) {
-                    const chosenPlayer = game.getPlayer(me.chosenPlayerName)
-                    const lastPoisonEffect = chosenPlayer.getLastPoisonEffect()
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER
+                }
+                // if (me.chosenPlayerName != null) {
+                //     const chosenPlayer = game.getPlayer(me.chosenPlayerName)
+                //     const lastPoisonEffect = chosenPlayer.getLastPoisonEffect()
 
-                    if (lastPoisonEffect?.roundNumber == game.roundNumber - 1) {
-                        me.info = {
-                            roles: [],
-                            type: InfoTypes.ROLES,
-                            text: 'Yes'
-                        }
-                    } else {
-                        me.info = {
-                            type: InfoTypes.ROLES,
-                            text: 'No'
-                        }
-                    }
-                }
+                //     if (lastPoisonEffect?.roundNumber == game.roundNumber - 1) {
+                //         me.info = {
+                //             roles: [],
+                //             type: InfoTypes.ROLES,
+                //             text: 'Yes'
+                //         }
+                //     } else {
+                //         me.info = {
+                //             type: InfoTypes.ROLES,
+                //             text: 'No'
+                //         }
+                //     }
+                // }
             },
             onPlayerAction(game, me, actionData) {
-                me.chosenPlayerName = null
+                if (me.chosenPlayerName != null) {
+                    const chosenPlayer = game.getPlayer(me.chosenPlayerName)
+                    chosenPlayer.removeStatus('Intoxicated')
+                }
                 if (me.isDrunkOrPoisoned()) {
                     return
                 }
                 const chosenPlayer = game.getPlayer(actionData)
-                chosenPlayer?.poison('Intoxicated', 'afterNightStart')
+                chosenPlayer?.poison('Intoxicated', 'never')
                 me.chosenPlayerName = chosenPlayer?.name
+            },
+            test(testingInjectable) {
+                let game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Imp', 'Intoxist', 'Saint', 'Saint', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                test(`Has power`, game.at(1).availableAction != null)
+                game.startNight()
+                test(`No has power`, game.at(1).availableAction == null)
             }
         },
         {
@@ -1905,13 +2013,34 @@ export const getRoles = () => {
                 }
                 demon.addStatus({
                     name: 'Scarlet Woman Death',
-                    onDeath(source, demon, game) {
+                    afterDeath(source, demon, game) {
+                        if (me.isDrunkOrPoisoned()) {
+                            return
+                        }
                         if (!me.isDead && game.getAlivePlayers()?.length >= 5) {
                             me.assignRoleLater(game, demon.getTrueRole(), { ignoreAssignEvent: true })
                         }
-                        return true
                     }
                 })
+            },
+            test(testingInjectable) {
+                let game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Imp', 'Scarlet Woman', 'Saint', 'Saint', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                game.startNight()
+                game.tryKillPlayer(game.at(0), { type: SourceOfDeathTypes.EXECUTION })
+                test(`Normal execution`, game.winner == null && game.at(1).inspectRole().name == 'Imp')
+
+                game = testingInjectable.makeTestTBGame()
+                game.setPlayersAndRoles(['Imp', 'Scarlet Woman', 'Saint', 'Saint', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+                game.startNight()
+                game.at(1).poison()
+                game.tryKillPlayer(game.at(0), { type: SourceOfDeathTypes.EXECUTION })
+                test(`Poisoned execution`, game.winner == 'Townsfolk' && game.at(1).inspectRole().name == 'Scarlet Woman', `
+                    Winner: ${game.winner}
+                    My role: ${game.at(1).inspectRole().name}
+                `)
             }
         },
         {

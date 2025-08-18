@@ -3,7 +3,7 @@
 export function randomInt(low, high){
     return Math.floor(Math.random() * (high - low + 1) + low);
 }
-export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to return true; */
+export function percentChance(chance) {	/* Ex: percentChance(20) = 20% chance to return true; */
     var c = randomInt(1, 100);
     if(c <= chance) return true;
     return false;
