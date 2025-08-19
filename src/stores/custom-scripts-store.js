@@ -20,8 +20,8 @@ const DEFAULT_SCRIPTS = {
         'Undertaker',
         'Soldier',
         'Ravenkeeper',
-        'Slayer',           // Not tested
-        'Mayor',            // Not tested
+        'Slayer',
+        'Mayor',
         
         'Saint',
         'Drunk',
@@ -30,17 +30,16 @@ const DEFAULT_SCRIPTS = {
         
         'Scarlet Woman',
         'Baron',
-        'Intoxist',         // Not implemented
+        'Intoxist',
         'Spy',              // Is a special case on a case by case basis..
         
         'Imp',
-        
-        
-        // Not in script
+    ],
+    'WIP Script': [
         'General',          // Not tested
         'Clockmaker',
         'Fool',
-        'Noble',        // Not tested
+        'Noble',            // Not tested
         'Virgo',            // Not tested
         'Mutant',
         'Assassin',         // Not tested

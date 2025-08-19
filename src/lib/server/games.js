@@ -39,7 +39,7 @@ const STATUS_EFFECT_TEMPLATE = {
     name: 'Protected',
     duration: StatusEffectDuration.UNTIL_NIGHT,
     isPoisoned: false,
-    onDeath: (source, me, game) => true,    // Returns true if should continue death
+    onDeath: (game, me, source) => true,    // Returns true if should continue death
 }
 
 
@@ -75,6 +75,20 @@ class Player {
             return trueRole.onInspected(this)
         }
         return trueRole
+    }
+
+    useAction(game, actionData) {
+        const actionFunc = this.hasOnlySecretRolePowers?
+            this.secretRole?.onPlayerAction
+            :this?.role?.onPlayerAction
+        if (actionFunc == null) {
+            return
+        }
+        if (this.availableAction == null) {
+            return
+        }
+        this.availableAction = null
+        actionFunc(game, this, actionData)
     }
 
     assignRoleLater(game, role, options = {}) {
@@ -162,7 +176,7 @@ class Player {
         const player = this
         for (const statusEffect of [...player.statusEffects]) {
             if (statusEffect[eventName] != null) {
-                const shouldContinue = statusEffect[eventName](source, player, game)
+                const shouldContinue = statusEffect[eventName](game, player, source)
                 if (shouldContinue == false) {  // true or null should both continue
                     return false
                 }
@@ -171,7 +185,7 @@ class Player {
 
         // console.log(`Killing through role onDeath...`)
         if (usedRole?.[eventName] != null) {
-            const shouldContinue = usedRole[eventName](source, player, game)
+            const shouldContinue = usedRole[eventName](game, player, source)
             if (shouldContinue == false) {
                 return false
             }
@@ -263,8 +277,8 @@ class Game {
         })
     }
     startNight() {
-        this.roundNumber += 1
         this.#applyAllEventsAt('onDayEnd')
+        this.roundNumber += 1
         this.phase = GamePhases.NIGHT
         this.#applyAllEventsAt('onNightStart')
         this.#applyAllEventsAt('afterNightStart')
@@ -566,6 +580,10 @@ class Game {
             this.winner = 'Evil'
             return
         }
+        if (aliveEvils.length == 1 && aliveTownsfolk.length == 1) {
+            this.winner = 'Evil'
+            return
+        }
         if (aliveEvils.length > aliveTownsfolk.length) {
             this.winner = 'Evil'
             return
@@ -676,6 +694,20 @@ class Game {
             this.countdownDuration = null
             cb()
         }, duration)
+    }
+    getTotalPowerDynamics() {
+        try {
+            const getTotalPower = players => players
+            .map(p => p.role?.getPower?.(this, p) ?? 0)
+            .reduce((soFar, e) => soFar + e, 0)
+            const goodPower = getTotalPower(this.playersInRoom.filter(p => !p.isEvil()))
+            const evilPower = getTotalPower(this.playersInRoom.filter(p => p.isEvil()))
+            return goodPower - evilPower
+        } catch (e) {
+            console.error('⭕ Error getting players power')
+            console.error(e)
+            return null
+        }
     }
     
 

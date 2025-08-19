@@ -37,6 +37,7 @@
 	import { InfoTypes } from '$lib/shared-lib/GamePhases.js';
 	import { phase, playersInRoom, roomCode, scriptName, scriptRoleNames } from '../../../stores/online/local/room.js';
     import { GamePhases, ActionDurations, ActionTypes } from '$lib/shared-lib/GamePhases.js'
+    import { tips } from '../../../lib/Tips.js'
     import { browser } from '$app/environment'
     import { afterNavigate } from '$app/navigation'
 
@@ -66,6 +67,7 @@
     import { swapElementsAt } from '../../../lib/utils.js';
     import Toaster from '../../../components-standalone/Toaster.svelte';
     import { getCustomScriptRoleNames } from '../../../stores/custom-scripts-store.js';
+    import { randomOf } from '../../../lib/utils.js';
 
 
     let gameOwnerName = null
@@ -74,7 +76,7 @@
     let countdownDuration = null
     let nSecondsRemaining = null
 
-    let isMyInfoDrawerOpen = false
+    let currentlyDisplayedInfo = null
     let isMyInfoRolesDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
     let isAllRolesDrawerOpen = false
@@ -83,6 +85,8 @@
     let winner = null
 
     let lastNotificationText = null
+
+    let availableTip = null
 
     let _nFetchRetries = 0  // Prevent spam in the console and server. Stop at 3
 
@@ -93,8 +97,7 @@
     let showToaster = () => {}
 
     function closeAllDrawers() {
-        isMyInfoDrawerOpen = false
-        isMyInfoRolesDrawerOpen = false
+        currentlyDisplayedInfo = null
         isActionChoosePlayerDrawerOpen = false
         isAllRolesDrawerOpen = false
         roleBeingInspected = null
@@ -147,6 +150,12 @@
 
         if (didPhaseChange(game)) {
             closeAllDrawers()
+
+            if (game.phase == GamePhases.NIGHT || game.phase == GamePhases.COUNTDOWN) {
+                availableTip = randomOf(tips)
+            } else {
+                availableTip = null
+            }
         }
 
         if (game.winner != null) {
@@ -302,6 +311,10 @@
         $playersInRoom = newPlayersInRoom
     }
 
+    function openMyInfoDrawerWithInfo(info) {
+        currentlyDisplayedInfo = info
+    }
+
     async function onUsePowerClick() {
         const myPower = $me.availableAction
         console.log({myPower})
@@ -318,12 +331,18 @@
         }
     }
 
+    
+
     async function actionChoosePlayer(playerName) {
         await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${$me.name}/action/${playerName}`)
         await refresh()
     }
     async function action() {
         await fetchOnlineGame('POST', `/api/game/${$roomCode}/player/${$me.name}/action/${me.name}`)
+    }
+
+    function seeTip() {
+
     }
 
 </script>
@@ -396,15 +415,15 @@
 
 <!-- Players with roles INFO -->
 <DrawerPage
-    isOpen={isMyInfoRolesDrawerOpen}
+    isOpen={currentlyDisplayedInfo?.type == InfoTypes.PLAYERS_WITH_ROLES}
     zIndex="487 !important"
     on:click={() => {
-        isMyInfoRolesDrawerOpen = false
+        currentlyDisplayedInfo = null
     }}
 >
-    {#if $me.info?.playersWithRoles != null}
+    {#if currentlyDisplayedInfo?.playersWithRoles != null}
         <ContactList className="margin-top-2">
-            {#each ($me.info.playersWithRoles ?? []) as player (player.name)}
+            {#each (currentlyDisplayedInfo.playersWithRoles ?? []) as player (player.name)}
                 <div style="width: 100%" class="flex-row gap-1">
                     <MinimalContact
                         name={player.name}
@@ -413,7 +432,7 @@
                         roleName={player.roleName}
                         isDead={player.isDead}
                         on:contact-click={name => {
-                            isMyInfoRolesDrawerOpen = false
+                            currentlyDisplayedInfo = null
                         }}
                     />
                 </div>
@@ -424,20 +443,20 @@
 </DrawerPage>
 
 <DrawerPage
-    isOpen={isMyInfoDrawerOpen}
+    isOpen={currentlyDisplayedInfo?.type == InfoTypes.ROLES || (currentlyDisplayedInfo != null && currentlyDisplayedInfo.type == null)}
     zIndex="486 !important"
     on:click={() => 
-        isMyInfoDrawerOpen = false
+        currentlyDisplayedInfo = null
     }
 >
-    {#if $me.info != null}
+    {#if currentlyDisplayedInfo != null}
         <div class="center-content flex-column margin-top-2">
-            {#if $me.info.roles?.filter(rn => rn != null).length == 1}
+            {#if currentlyDisplayedInfo.roles?.filter(rn => rn != null).length == 1}
                 <div class="margin-top-4"></div>
             {/if}
             <div>
-                {#if $me.info.roles != null}
-                    {#each $me.info.roles.filter(rn => rn != null) as roleName (roleName)}
+                {#if currentlyDisplayedInfo.roles != null}
+                    {#each currentlyDisplayedInfo.roles.filter(rn => rn != null) as roleName (roleName)}
                         <div class="center-content flex-column margin-top-1">
                             <div>
                                 <RoundCardPortrait role={{...getRole(roleName), isBig: true, isValid: true}}/>
@@ -446,7 +465,7 @@
                                 <h2 class="margin-top-half center-text">
                                     {@html roleName}
                                 </h2>
-                                {#if $me.info.showsRoleDescriptions}
+                                {#if currentlyDisplayedInfo.showsRoleDescriptions}
                                     <p class="margin-top-half center-text padding-1">
                                         {@html getRole(roleName)?.effect}
                                     </p>
@@ -456,10 +475,10 @@
                     {/each}
                 {/if}
             </div>
-            {#if $me.info.text != null}
+            {#if currentlyDisplayedInfo.text != null}
                 <div>
                     <p class="margin-top-2 center-text">
-                        {@html $me.info.text}
+                        {@html currentlyDisplayedInfo.text}
                     </p>
                 </div>
             {/if}
@@ -534,8 +553,9 @@
             </div>
         {/if}
 
+        <button class="btn glow-blink" style="background-color: #44AAAA; --blink-color: #44AAAA" on:click={seeTip}>See Tip!</button>
+        
         {#each ($playersInRoom ?? []) as player (player.name)}
-
             <div style="width: 100%" class="flex-column gap-auto">
                 <MinimalContact
                     name={player.name}
@@ -563,11 +583,7 @@
                     {@const text = $me.info.buttonText ?? 'Secret Info'}
                     {@const color = $me.info.buttonColor ?? 'var(--blue-color)'}
                     <button class="me-button btn glow-blink" style="--blink-color: {color}; background-color: {color};" on:click={() => {
-                        if ($me.info.type == InfoTypes.PLAYERS_WITH_ROLES) {
-                            isMyInfoRolesDrawerOpen = true
-                        } else {
-                            isMyInfoDrawerOpen = true
-                        }
+                        openMyInfoDrawerWithInfo($me.info)
                     }}>
                         { text }
                     </button>

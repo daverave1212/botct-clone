@@ -4,7 +4,7 @@ Power Types:
   
   - Nightly Choose Player
 
-  - OnDeath(source)
+  - onDeath(game, me, source)
 
   - Active Power
 
