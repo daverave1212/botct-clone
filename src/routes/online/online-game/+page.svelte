@@ -135,9 +135,7 @@
                 nSecondsRemaining = null
             }
         }
-        function didPhaseChange(game) {
-            return game.phase != $phase
-        }
+        function didPhaseChange(game) { return game.phase != $phase }
 
         if (isRetryLimitExceeded())
             return
@@ -152,7 +150,7 @@
             closeAllDrawers()
 
             if (game.phase == GamePhases.NIGHT || game.phase == GamePhases.COUNTDOWN) {
-                availableTip = randomOf(tips)
+                availableTip = randomOf(...tips)
             } else {
                 availableTip = null
             }
@@ -342,7 +340,8 @@
     }
 
     function seeTip() {
-
+        console.log({availableTip})
+        currentlyDisplayedInfo = availableTip
     }
 
 </script>
@@ -442,6 +441,7 @@
 
 </DrawerPage>
 
+<!-- ROLES info -->
 <DrawerPage
     isOpen={currentlyDisplayedInfo?.type == InfoTypes.ROLES || (currentlyDisplayedInfo != null && currentlyDisplayedInfo.type == null)}
     zIndex="486 !important"
@@ -450,8 +450,9 @@
     }
 >
     {#if currentlyDisplayedInfo != null}
+        {@const nRoles = currentlyDisplayedInfo.roles?.filter(rn => rn != null).length}
         <div class="center-content flex-column margin-top-2">
-            {#if currentlyDisplayedInfo.roles?.filter(rn => rn != null).length == 1}
+            {#if nRoles == null || nRoles <= 1}
                 <div class="margin-top-4"></div>
             {/if}
             <div>
@@ -462,7 +463,7 @@
                                 <RoundCardPortrait role={{...getRole(roleName), isBig: true, isValid: true}}/>
                             </div>
                             <div>
-                                <h2 class="margin-top-half center-text">
+                                <h2 class="margin-top-half center-text padding-1">
                                     {@html roleName}
                                 </h2>
                                 {#if currentlyDisplayedInfo.showsRoleDescriptions}
@@ -477,7 +478,7 @@
             </div>
             {#if currentlyDisplayedInfo.text != null}
                 <div>
-                    <p class="margin-top-2 center-text">
+                    <p class="margin-top-2 center-text padding-1">
                         {@html currentlyDisplayedInfo.text}
                     </p>
                 </div>
@@ -553,8 +554,10 @@
             </div>
         {/if}
 
-        <button class="btn glow-blink" style="background-color: #44AAAA; --blink-color: #44AAAA" on:click={seeTip}>See Tip!</button>
-        
+        {#if availableTip != null}
+            <button class="btn glow-blink" style="background-color: #44AAAA; --blink-color: #44AAAA" on:click={seeTip}>See Tip!</button>
+        {/if}
+
         {#each ($playersInRoom ?? []) as player (player.name)}
             <div style="width: 100%" class="flex-column gap-auto">
                 <MinimalContact
@@ -589,8 +592,9 @@
                     </button>
                 {/if}
                 {#if $me.availableAction != null && $me.name == player.name}
+                    {@const text = $me.availableAction.buttonText ?? 'Use Power!'}
                     <button class="me-button btn red glow-blink" on:click={onUsePowerClick}>
-                        Use Power!
+                        { text }
                     </button>
                 {/if}
                 {#if $me.role != null && $me.name == player.name}

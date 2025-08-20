@@ -485,7 +485,116 @@ export const getRoles = () => {
         {
             "name": "Fortune Teller",
             "difficulty": TROUBLE_BREWING,
-            "effect": "Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you."
+            "effect": "Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.",
+            actionDuration: 'onNightEnd',
+            infoDuration: 'onNightEnd',
+            onSetup(game, me) {
+                me.actionState = 'choosing-first'
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    buttonText: 'Choose 1st Player'
+                }
+                const redHerring = randomOf(...game.getAliveTownsfolk())    // Yes that can be me
+                redHerring.addStatus({
+                    name: 'Red Herring'
+                })
+            },
+            onNightStart(game, me) {
+                if (game.roundNumber == 1) {
+                    return
+                }
+                me.actionState = 'choosing-first'
+                me.availableAction = {
+                    type: ActionTypes.CHOOSE_PLAYER,
+                    buttonText: 'Choose 1st Player'
+                }
+            },
+            onPlayerAction(game, me, actionData) {
+                let chosenPlayer = game.getPlayer(actionData)
+
+                if (me.actionState == 'choosing-first') {
+                    me.firstChosenPlayerName = chosenPlayer.name
+                    me.actionState = 'choosing-second'
+                    me.availableAction = {
+                        type: ActionTypes.CHOOSE_PLAYER,
+                        buttonText: 'Choose 2nd Player'
+                    }
+                    return
+                }
+
+                if (me.actionState == 'choosing-second') {
+                    me.secondChosenPlayerName = chosenPlayer.name
+                    me.actionState = null
+                    if (me.firstChosenPlayerName == me.secondChosenPlayerName) {
+                        me.info = {
+                            type: InfoTypes.ROLES,
+                            text: `You can't choose the same person twice.`
+                        }
+                        return
+                    }
+
+                    const first = game.getPlayer(me.firstChosenPlayerName)
+                    const second = game.getPlayer(me.secondChosenPlayerName)
+                    const firstIsDemon = first?.role?.isDemon
+                    const secondIsDemon = second?.role?.isDemon
+                    const isEitherRedHerring = first.hasStatus('Red Herring') || second.hasStatus('Red Herring')
+                    let yesOrNo = 'NO'
+                    if (firstIsDemon || secondIsDemon || isEitherRedHerring) {
+                        yesOrNo = 'YES'
+                        if (me.isDrunkOrPoisoned() && percentChance(75)) {
+                            yesOrNo = 'NO'
+                        }
+                    }
+
+                    me.info = {
+                        type: InfoTypes.ROLES,
+                        text: `For <em>${me.firstChosenPlayerName}</em> and <em>${me.secondChosenPlayerName}</em>: ${yesOrNo}`
+                    }
+                }
+            },
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestTBGame()
+                
+                game.setPlayersAndRoles(['Imp', 'Fortune Teller', 'Moonchild', 'Moonchild', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+
+                test(`Red herring exists`, game.filter(p => p.hasStatus('Red Herring')).length == 1)
+                
+                test(`Has power on setup`, game.at(1).availableAction != null && game.at(1).actionState == 'choosing-first', `
+                    Has action: ${game.at(1).availableAction != null}
+                    Action state: ${game.at(1).actionState}
+                `)
+                game.startNight()
+                test(`Has power first night`, game.at(1).availableAction != null && game.at(1).actionState == 'choosing-first')
+                game.at(1).useAction(game, game.at(0))
+                test(`First player chosen correctly`,
+                    game.at(1).availableAction != null
+                    && game.at(1).firstChosenPlayerName != null
+                    && game.at(1).actionState == 'choosing-second'
+                )
+                game.at(1).useAction(game, game.at(2))
+                test(`Second player chosen correctly`,
+                    game.at(1).availableAction == null
+                    && game.at(1).secondChosenPlayerName != null
+                    && game.at(1).actionState == null
+                    && game.at(1).info != null
+                )
+                test(`Gets a yes`, game._atHasInfoWith(1, 'YES'))
+                game.startDay()
+
+
+                game.startNight()
+                test(`Has power second night`, game.at(1).availableAction != null && game.at(1).actionState == 'choosing-first')
+                game.at(1).useAction(game, game.at(2))
+                game.at(1).useAction(game, game.at(3))
+                test(`Get a no or red herring`, 
+                    game._atHasInfoWith(1, 'NO')
+                    ||
+                    (game._atHasInfoWith(1, 'YES') && (game.at(2).hasStatus('Red Herring') || game.at(3).hasStatus('Red Herring')))
+                , `
+                    Info text: ${game.at(1).info?.text}
+                `)
+            }
         },
         {
             "name": "Gambler",
@@ -500,10 +609,10 @@ export const getRoles = () => {
             getPower: (game, me) => me.isDead? 0: 1,
             onNightStart(game, me) {
                 let tfPower = game.getTownsfolk()
-                    .map(p => p.getTrueRole().getPower(game, p))
+                    .map(p => p.getPower(game, p))
                     .reduce((soFar, n) => soFar + n, 0)
                 let evPower = game.getEvils()
-                    .map(p => p.getTrueRole().getPower(game, p))
+                    .map(p => p.getPower(game, p))
                     .reduce((soFar, n) => soFar + n, 0)
                 
                 if (me.isDrunkOrPoisoned()) {
@@ -1602,11 +1711,10 @@ export const getRoles = () => {
             ribbonText: "OUTSIDER",
             isOutsider: true,
             actionDuration: 'onDayStart',
-            onDeath(game, me, source) {
+            afterDeath(game, me, source) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER
                 }
-                return true
             },
             onPlayerAction(game, me, actionData) {
                 const chosenPlayer = game.getPlayer(actionData)

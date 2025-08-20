@@ -13,9 +13,9 @@ const DEFAULT_SCRIPTS = {
         'Investigator',
         'Chef',
         'Grandmother',
-        
+        'Fortune Teller',
         'Empath',
-        'Dreamer',
+        
         'Monk',
         'Undertaker',
         'Soldier',
@@ -37,6 +37,7 @@ const DEFAULT_SCRIPTS = {
     ],
     'WIP Script': [
         'General',          // Not tested
+        'Dreamer',
         'Clockmaker',
         'Fool',
         'Noble',            // Not tested

@@ -121,6 +121,10 @@ class Player {
     }
 
     getTrueRole() {
+        if (this.secretRole == null && this.role == null) {
+            const msg = `Player ${this.name} has no role!`
+            console.error(`⭕ ${msg}`)
+        }
         if (this.secretRole != null) {
             return this.secretRole
         }
@@ -169,6 +173,10 @@ class Player {
 
     hasStatus(name) {
         return this.statusEffects.some(se => se.name == name)
+    }
+
+    getPower(game) {
+        return this.getTrueRole()?.getPower?.() ?? 0
     }
 
     applyAllMyDeathEventsAt(game, eventName, source) {
@@ -321,10 +329,15 @@ class Game {
         }
 
         if (IS_DEBUG) {
-            const imp = this.playersInRoom.find(p => p.role?.name == 'Imp')
-            const impRole = imp.role
-            imp.role = this.playersInRoom[0].role
-            this.playersInRoom[0].role = impRole
+            const makeMeRole = (roleName) => {
+                const dude = this.playersInRoom.find(p => p.role?.name == roleName)
+                const dudeRole = dude.role
+                dude.role = this.playersInRoom[0].role
+                this.playersInRoom[0].role = dudeRole
+            }
+
+            this.playersInRoom[0].role = getRole('Fortune Teller')
+
         }
 
         this.#applyAllEventsAt('onAssignRole')
@@ -388,7 +401,6 @@ class Game {
     at(i) {
         return this.playersInRoom[i]
     }
-
     getPlayer(nameOrPlayer) {
         if (nameOrPlayer == null) {
             console.warn('⚠️ getPlayer given null parameter.')
@@ -397,11 +409,9 @@ class Game {
         const playerName = (typeof nameOrPlayer === 'string')? nameOrPlayer: nameOrPlayer.name
         return this.playersInRoom.find(p => p.name == playerName)
     }
-
     addPlayer(player) {
         this.playersInRoom.push(player)
     }
-
     hasPlayer(playerName) { 
         const playersByThatName = this.playersInRoom.filter(p => p.name == playerName)
         if (playersByThatName.length == 0) {
@@ -409,6 +419,10 @@ class Game {
         }
         return true
     }
+    filter(func) {
+        return this.playersInRoom.filter(func)
+    }
+
     getPlayersSortedForSetup() {
         return this.playersInRoom.sort((a, b) => getSetupRolePriority(a.getTrueRole()) - getSetupRolePriority(b.getTrueRole()))
     }
@@ -624,7 +638,8 @@ class Game {
             source
         })
         this.sendNotification('info', `${player.name} has died.`)
-
+        player.availableAction = null
+        player.info = null
         player.applyAllMyDeathEventsAt(this, 'afterDeath', source)
 
         this.checkWinConditions()
@@ -698,8 +713,8 @@ class Game {
     getTotalPowerDynamics() {
         try {
             const getTotalPower = players => players
-            .map(p => p.role?.getPower?.(this, p) ?? 0)
-            .reduce((soFar, e) => soFar + e, 0)
+                .map(p => p.getPower())
+                .reduce((soFar, e) => soFar + e, 0)
             const goodPower = getTotalPower(this.playersInRoom.filter(p => !p.isEvil()))
             const evilPower = getTotalPower(this.playersInRoom.filter(p => p.isEvil()))
             return goodPower - evilPower
