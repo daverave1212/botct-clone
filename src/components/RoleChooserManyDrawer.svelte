@@ -3,28 +3,7 @@
     :root {
         --role-chooser-image-size: 20vw;
     }
-    .role-chooser-content {
-        width: 100%;
-        
-        padding-left: 3vw;
-        padding-left: 3vw;
-        padding-top: 2vh;
-        padding-bottom: 2vh;
 
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-        grid-row-gap: 6vw;
-    }
-    .role-box {
-        /* width: var(--role-chooser-image-size); */
-    }
-    .gray-text {
-        color: gray;
-    }
-    .role-box .title {
-        padding-top: calc(0.1 * var(--role-chooser-image-size));
-        text-align: center;
-    }
 
 </style>
 

@@ -3,7 +3,7 @@
 export function randomInt(low, high){
     return Math.floor(Math.random() * (high - low + 1) + low);
 }
-export function percentChance(chance){	/* Ex: percentChance(20) = 20% chance to return true; */
+export function percentChance(chance) {	/* Ex: percentChance(20) = 20% chance to return true; */
     var c = randomInt(1, 100);
     if(c <= chance) return true;
     return false;
@@ -32,12 +32,14 @@ export function randomizeArray(array_a){
 
 let currentTestsData = {
     name: '',
-    failures: []
+    failures: [],
+    nTestsDone: 0
 }
 export function startTesting() {
     currentTestsData = {
         name: '',
-        failures: []
+        failures: [],
+        nTestsDone: 0
     }
 }
 export function setCurrentTest(name) {
@@ -46,6 +48,7 @@ export function setCurrentTest(name) {
     currentTestsData.name = name
 }
 export function test(msg, condition, failMessage=null) {
+    currentTestsData.nTestsDone += 1
     if (condition) {
         console.log(`  ✅ ${msg}`)
     } else {
@@ -56,6 +59,7 @@ export function test(msg, condition, failMessage=null) {
 }
 // Fail is acceptable
 export function maybeTest(msg, condition, failMessage=null) {
+    currentTestsData.nTestsDone += 1
     if (condition) {
         console.log(`  ✅ ${msg}`)
     } else {
@@ -67,8 +71,9 @@ export function maybeTest(msg, condition, failMessage=null) {
 export function printTestResults() {
     console.log('')
     if (currentTestsData.failures.length == 0) {
-        console.log(`No failed tests 💚`)
+        console.log(`💚 ${currentTestsData.nTestsDone}/${currentTestsData.nTestsDone} Tests passed`)
     } else {
+        console.log(`🟨 ${currentTestsData.nTestsDone - currentTestsData.failures.length}/${currentTestsData.nTestsDone} passed tests:`)
         console.log(`⭕ ${currentTestsData.failures.length} failed tests:`)
         for (const msg of currentTestsData.failures) {
             console.log(`${msg}`)

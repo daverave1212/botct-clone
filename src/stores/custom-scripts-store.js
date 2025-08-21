@@ -7,40 +7,43 @@ const DEFAULT_SCRIPTS = {
     'Trouble Brewing': getRoles().filter(role => role.difficulty == TROUBLE_BREWING).map(role => role.name),
     'Bad Moon Rising': getRoles().filter(role => role.difficulty == BAD_MOON_RISING).map(role => role.name),
     'Sects and Violets': getRoles().filter(role => role.difficulty == SECTS_AND_VIOLETS).map(role => role.name),
-    'My Custom Script': [    // TODO: Remove this and replace it
+    'Trouble Brewing Online': [    // TODO: Remove this and replace it
         'Washerwoman',
         'Librarian',
         'Investigator',
         'Chef',
-        'Clockmaker',
-        'Grandmother',  // Somewhat tested
-        'Noble',        // Not tested
-        
+        'Grandmother',
+        'Fortune Teller',
         'Empath',
-        'Dreamer',
+        
         'Monk',
         'Undertaker',
-        'Fool',
         'Soldier',
-        'Ravenkeeper',      // Not tested
-        'Virgo',            // Not tested
-        'General',          // Not tested
-        'Slayer',           // Not tested
-        'Mayor',            // Not tested
-
+        'Ravenkeeper',
+        'Slayer',
+        'Mayor',
+        
         'Saint',
         'Drunk',
         'Moonchild',
-        'Mutant',
         'Recluse',          // Is a special case on a case by case basis..
-
+        
         'Scarlet Woman',
         'Baron',
-        'Intoxist',         // Not implemented
+        'Intoxist',
+        'Spy',              // Is a special case on a case by case basis..
+        
+        'Imp',
+    ],
+    'WIP Script': [
+        'General',          // Not tested
+        'Dreamer',
+        'Clockmaker',
+        'Fool',
+        'Noble',            // Not tested
+        'Virgo',            // Not tested
+        'Mutant',
         'Assassin',         // Not tested
-        'Spy',
-
-        'Imp'
     ]
 }
 

@@ -4,9 +4,17 @@ import { InfoTypes } from "$lib/shared-lib/GamePhases"
 import { getNightlyRolePriority, getRole, getRoleNumbersByPlayers, getSetupRolePriority } from "$lib/shared-lib/SharedDatabase"
 import { createRandomCode, popArrayElementFind, randomOf, randomizeArray, swapElementsAt } from "./utils"
 import { randomInt } from "crypto"
+import { percentChance } from "$lib/shared-lib/shared-utils"
 
 
-const IS_DEBUG = true
+let IS_DEBUG = false
+
+export function setIsDebug(val) {
+    IS_DEBUG = val
+}
+export function getIsDebug() {
+    return IS_DEBUG
+}
 
 
 function generateRandomRoomCode() {
@@ -38,7 +46,7 @@ const STATUS_EFFECT_TEMPLATE = {
     name: 'Protected',
     duration: StatusEffectDuration.UNTIL_NIGHT,
     isPoisoned: false,
-    onDeath: (source, me, game) => true,    // Returns true if should continue death
+    onDeath: (game, me, source) => true,    // Returns true if should continue death
 }
 
 
@@ -76,6 +84,20 @@ class Player {
         return trueRole
     }
 
+    useAction(game, actionData) {
+        const actionFunc = this.hasOnlySecretRolePowers?
+            this.secretRole?.onPlayerAction
+            :this?.role?.onPlayerAction
+        if (actionFunc == null) {
+            return
+        }
+        if (this.availableAction == null) {
+            return
+        }
+        this.availableAction = null
+        actionFunc(game, this, actionData)
+    }
+
     assignRoleLater(game, role, options = {}) {
         const { ignoreAssignEvent } = options 
         role = role.name == null? getRole(role): role
@@ -87,6 +109,21 @@ class Player {
             this.role.afterAssignRole(game, this)
         }
     }
+    reassignRole(game, role, options={}) {
+        const { ignoreAssignEvent } = options 
+        role = role.name == null? getRole(role): role
+
+        this.role = role
+        this.secretRole = null
+        this.info = null
+        this.availableAction = null
+        this.hasOnlySecretRolePowers = false
+        if (ignoreAssignEvent) {
+            return
+        }
+        this.role?.afterAssignRole?.(game, this)
+    }
+
 
     isEvil() {
         if (this.changedAlignment == 'evil') {
@@ -106,6 +143,10 @@ class Player {
     }
 
     getTrueRole() {
+        if (this.secretRole == null && this.role == null) {
+            const msg = `Player ${this.name} has no role!`
+            console.error(`⭕ ${msg}`)
+        }
         if (this.secretRole != null) {
             return this.secretRole
         }
@@ -153,7 +194,22 @@ class Player {
     }
 
     hasStatus(name) {
-        return this.statusEffects.find(se => se.name == name) != null
+        return this.statusEffects.some(se => se.name == name)
+    }
+
+    getPower() {
+        const game = getGame(this.roomCode) ?? null
+        if (game == null) {
+            console.error(`❌ unable to find game room ${this.roomCode}`)
+            return 0
+        }
+        if (this.getTrueRole() == null) {
+            return 0
+        }
+        if (this.getTrueRole().getPower == null) {
+            return 0
+        }
+        return this.getTrueRole()?.getPower(game, this)
     }
 
     applyAllMyDeathEventsAt(game, eventName, source) {
@@ -161,7 +217,7 @@ class Player {
         const player = this
         for (const statusEffect of [...player.statusEffects]) {
             if (statusEffect[eventName] != null) {
-                const shouldContinue = statusEffect[eventName](source, player, game)
+                const shouldContinue = statusEffect[eventName](game, player, source)
                 if (shouldContinue == false) {  // true or null should both continue
                     return false
                 }
@@ -170,8 +226,7 @@ class Player {
 
         // console.log(`Killing through role onDeath...`)
         if (usedRole?.[eventName] != null) {
-            console.log(`Doing ${player.name} onDeath`)
-            const shouldContinue = usedRole[eventName](source, player, game)
+            const shouldContinue = usedRole[eventName](game, player, source)
             if (shouldContinue == false) {
                 return false
             }
@@ -231,9 +286,10 @@ class Game {
 
     lastNotification
 
-    constructor(ownerName) {
+    constructor(ownerName, options={}) {
+        const { customRoomCode } = options
         this.ownerName = ownerName
-        this.roomCode = generateRandomRoomCode()
+        this.roomCode = customRoomCode ?? generateRandomRoomCode()
         this.scriptName = 'A Custom Script'
         this.scriptRoleNames = []
         this.privateKey = createRandomCode(6)
@@ -263,8 +319,8 @@ class Game {
         })
     }
     startNight() {
-        this.roundNumber += 1
         this.#applyAllEventsAt('onDayEnd')
+        this.roundNumber += 1
         this.phase = GamePhases.NIGHT
         this.#applyAllEventsAt('onNightStart')
         this.#applyAllEventsAt('afterNightStart')
@@ -307,10 +363,15 @@ class Game {
         }
 
         if (IS_DEBUG) {
-            const imp = this.playersInRoom.find(p => p.role?.name == 'Imp')
-            const impRole = imp.role
-            imp.role = this.playersInRoom[0].role
-            this.playersInRoom[0].role = impRole
+            const makeMeRole = (roleName) => {
+                const dude = this.playersInRoom.find(p => p.role?.name == roleName)
+                const dudeRole = dude.role
+                dude.role = this.playersInRoom[0].role
+                this.playersInRoom[0].role = dudeRole
+            }
+
+            this.playersInRoom[0].role = getRole('Fortune Teller')
+
         }
 
         this.#applyAllEventsAt('onAssignRole')
@@ -374,7 +435,6 @@ class Game {
     at(i) {
         return this.playersInRoom[i]
     }
-
     getPlayer(nameOrPlayer) {
         if (nameOrPlayer == null) {
             console.warn('⚠️ getPlayer given null parameter.')
@@ -383,11 +443,9 @@ class Game {
         const playerName = (typeof nameOrPlayer === 'string')? nameOrPlayer: nameOrPlayer.name
         return this.playersInRoom.find(p => p.name == playerName)
     }
-
     addPlayer(player) {
         this.playersInRoom.push(player)
     }
-
     hasPlayer(playerName) { 
         const playersByThatName = this.playersInRoom.filter(p => p.name == playerName)
         if (playersByThatName.length == 0) {
@@ -395,6 +453,10 @@ class Game {
         }
         return true
     }
+    filter(func) {
+        return this.playersInRoom.filter(func)
+    }
+
     getPlayersSortedForSetup() {
         return this.playersInRoom.sort((a, b) => getSetupRolePriority(a.getTrueRole()) - getSetupRolePriority(b.getTrueRole()))
     }
@@ -502,6 +564,27 @@ class Game {
         }
         return prevI
     }
+
+    getRandomEvilRoleNameInScript() {
+        return randomOf(...(this.getScriptRoleObjects().filter(r => r.isEvil))).name
+    }
+    getRandomTownsfolkRoleAsPoisoned() {
+        if (percentChance(50) && this.isRoleInScript('Drunk')) {
+            return 'Drunk'
+        }
+        return this.getRandomEvilRoleNameInScript()
+    }
+    getRandomGoodRoleAsPoisoned() {
+        const goodRolesNotInGame = this.getGoodsNotInGame()
+        if (percentChance(50) && this.isRoleInScript('Drunk')) {
+            return 'Drunk'
+        }
+        if (goodRolesNotInGame.length == 0) {
+            return randomOf(...this.getScriptGoodRoleNames())
+        } else {
+            return randomOf(...goodRolesNotInGame).name
+        }
+    }
     
     getRolesNotInGame() {   // Includes secret roles
         const playerRoleNames = this.playersInRoom.map(p => p.role.name)
@@ -545,6 +628,10 @@ class Game {
             this.winner = 'Evil'
             return
         }
+        if (aliveEvils.length == 1 && aliveTownsfolk.length == 1) {
+            this.winner = 'Evil'
+            return
+        }
         if (aliveEvils.length > aliveTownsfolk.length) {
             this.winner = 'Evil'
             return
@@ -585,7 +672,8 @@ class Game {
             source
         })
         this.sendNotification('info', `${player.name} has died.`)
-
+        player.availableAction = null
+        player.info = null
         player.applyAllMyDeathEventsAt(this, 'afterDeath', source)
 
         this.checkWinConditions()
@@ -655,6 +743,24 @@ class Game {
             this.countdownDuration = null
             cb()
         }, duration)
+    }
+    getTotalPowerDynamics() {
+        if (this.playersInRoom.some(p => p == null)) {
+            console.log(this.playersInRoom)
+            console.error('⭕ A player is null!!!')
+        }
+        try {
+            const getPowers = players => players.map(p => p.getPower())
+            const getTotalPower = players => players.map(p => p.getPower()).reduce((soFar, e) => soFar + e, 0)
+            const goods = this.playersInRoom.filter(p => !p.isEvil())
+            const goodPower = getTotalPower(goods)
+            const evilPower = getTotalPower(this.playersInRoom.filter(p => p.isEvil()))
+            return goodPower - evilPower
+        } catch (e) {
+            console.error('⭕ Error getting players power')
+            console.error(e)
+            return 0
+        }
     }
     
 
@@ -743,9 +849,9 @@ export function createNewGame(player) {
     return game
 }
 
-export function makeTestTBGame() {
+export function makeTestTBGame(options) {
     const player = { name: 'Dave', src: 'none.png' }
-    const game = new Game(player.name)
+    const game = new Game(player.name, options)
     games[game.roomCode] = game
     game.scriptName = 'Trouble Brewing Modified'
     game.scriptRoleNames = [

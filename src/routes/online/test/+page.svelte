@@ -42,6 +42,10 @@
     }}>Check Shared Lib</button>
 
 
+    <br/>
+    <button class="btn red" on:click={async () => {
+        fetchGame('PUT', '/api/debug')
+    }}>Toggle debug mode</button>
     <button class="btn red" on:click={async () => {
         fetchGame('GET', '/api/test')
     }}>Run tests</button>

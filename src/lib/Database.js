@@ -390,7 +390,7 @@ export const getRoles = () => {
             "name": "Fool",
             "difficulty": BAD_MOON_RISING,
             "effect": "The 1st time you die, you dont.",
-            onDeath(source, me) {
+            onDeath(game, me, source) {
                 if (me.didUsePower || me.isDrunk) {
                     return true
                 } else {
@@ -447,7 +447,7 @@ export const getRoles = () => {
                 randomTownsfolk.statusEffects.push({
                     name: 'Grandson',
                     duration: StatusEffectDuration.PERMANENT,
-                    onDeath(source) {
+                    onDeath(game, me, source) {
                         if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
                             game.tryKillPlayer(player, { type: SourceOfDeathTypes.OTHER })
                         }
@@ -714,7 +714,7 @@ export const getRoles = () => {
             "name": "Soldier",
             "difficulty": TROUBLE_BREWING,
             "effect": "You are safe from the Demon.",
-            onDeath(source, me) {
+            onDeath(game, me, source) {
                 if (me.isDrunk) {
                     return true
                 }
@@ -914,7 +914,7 @@ export const getRoles = () => {
             ribbonText: "OUTSIDER",
             isOutsider: true,
             actionDuration: 'onDayStart',
-            onDeath(source, me) {
+            onDeath(game, me, source) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER
                 }
