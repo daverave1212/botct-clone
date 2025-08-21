@@ -170,7 +170,10 @@ export const getRoles = () => {
             "effect": "You start knowing how many pairs of evil players there are.",
             infoDuration: 'onNightEnd',
             getPower: (game, me) => me.isDead? 0.25: 1,
-            onSetup(game, me) {
+            onNightStart(game, me) {
+                if (game.roundNumber != 1) {
+                    return
+                }
                 if (game.playersInRoom?.length < 1) {
                     return
                 }
@@ -190,30 +193,41 @@ export const getRoles = () => {
                 }
             },
             test(testingInjectable) {
-                const game = testingInjectable.makeTestTBGame()
+                let game = testingInjectable.makeTestTBGame()
                 
                 game.setPlayersAndRoles(['Investigator', 'Chef', 'Intoxist', 'Fool', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`0 pairs`, game._atHasInfoWith(1, '0'))
 
+                game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Investigator', 'Chef', 'Fool', 'Intoxist', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`1 pair`, game._atHasInfoWith(1, '1'))
 
+                game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Scarlet Woman', 'Chef', 'Fool', 'Fool', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`1 pair (overflow)`, game._atHasInfoWith(1, '1'))
 
+                game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Scarlet Woman', 'Chef', 'Fool', 'Intoxist', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`2 pairs`, game._atHasInfoWith(1, '2'))
 
+                game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Scarlet Woman', 'Chef', 'Fool', 'Recluse', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`Recluse 2 pairs`, game._atHasInfoWith(1, '2'))
 
+                game = testingInjectable.makeTestTBGame()
                 game.setPlayersAndRoles(['Spy', 'Chef', 'Fool', 'Recluse', 'Imp'])
                 game.doRolesSetup()
+                game.startNight()
                 test(`Recluse + Spy 1 pair`, game._atHasInfoWith(1, '1'))
             }
         },
@@ -317,7 +331,7 @@ export const getRoles = () => {
             "name": "Dreamer",
             "difficulty": SECTS_AND_VIOLETS,
             "effect": "Each night, choose a player (not yourself or Travellers): you learn 1 good & 1 evil character, 1 of which is correct.",
-            getPower: (game, me) => game.roundNumber * 0.4 + me.isDead? 0.2: 0,
+            getPower: (game, me) => (game?.roundNumber ?? 0) * 0.4 + me.isDead? 0.2: 0,
             onNightStart(game, me) {
                 me.availableAction = {
                     type: ActionTypes.CHOOSE_PLAYER,
@@ -383,7 +397,7 @@ export const getRoles = () => {
             "name": "Empath",
             "difficulty": TROUBLE_BREWING,
             "effect": "Each night, you learn how many of your 2 alive neighbors are evil.",
-            getPower: (game, me) => game.roundNumber * 0.25 + me.isDead? 0.45: 0,
+            getPower: (game, me) => (game?.roundNumber ?? 1) * 0.25 + me.isDead? 0.45: 0,
             infoDuration: 'onNightEnd',
             onNightStart(game, me) {
                 if (me.isDrunkOrPoisoned()) {
@@ -641,7 +655,8 @@ export const getRoles = () => {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
             getPower: (game, me) => {
-                const isGrandsonDead = game.playersInRoom.find(p => p.hasStatus('Grandson'))
+                const grandson = game?.playersInRoom?.find(p => p.hasStatus('Grandson'))
+                const isGrandsonDead = grandson?.isDead ?? false
                 if (isGrandsonDead && me.isDead) {
                     return 0
                 }
@@ -931,7 +946,7 @@ export const getRoles = () => {
                 }
                 const powerDynamics = game.getTotalPowerDynamics()
                 if (powerDynamics == null) {
-                    return
+                    return true
                 }
 
                 let possiblePlayers = game.getAliveTownsfolk()
@@ -949,11 +964,12 @@ export const getRoles = () => {
                 }
             },
             test(testingInjectable) {
-                let game = testingInjectable.makeTestTBGame()
+                let game = testingInjectable.makeTestTBGame({ customRoomCode: 1 })
                 
                 game.setPlayersAndRoles(['Imp', 'Mayor', 'Librarian', 'Slayer', 'Dreamer', 'Recluse', 'Spy'])
                 game.doRolesSetup()
                 
+                test(`No null players: ${!game.playersInRoom.some(p => p == null)}`, !game.playersInRoom.some(p => p == null))
                 test(`Power dynamics ok`, game.getTotalPowerDynamics() != null, `
                     Power dynamics: ${game.getTotalPowerDynamics()}
                 `)
@@ -2208,7 +2224,7 @@ export const getRoles = () => {
             infoDuration: 'onNightEnd',
             actionDuration: 'onNightEnd',
             getPower: (game, me) => {
-                const nSuccessfulPoisons = game.getTownsfolk()
+                const nSuccessfulPoisons = (game?.getTownsfolk() ?? [])
                     .map(p => p.poisonEffectHistory.length)
                     .reduce((soFar, n) => soFar + n, 0)
                 return nSuccessfulPoisons + me.isDead? 0: 0.75
@@ -2489,10 +2505,44 @@ export const getRoles = () => {
                                 return
                             }
                             const minion = randomOf(...minions)
-                            minion.assignRoleLater(game, getRole('Imp'), { ignoreAssignEvent: true })
+                            console.log(`Assigning role Imp to ${minion.getTrueRole().name}`)
+                            minion.reassignRole(game, getRole('Imp'))
                         }
                     }
                 })
+            },
+            test(testingInjectable) {
+                const game = testingInjectable.makeTestTBGame()
+                
+                game.setPlayersAndRoles(['Imp', 'Soldier', 'Librarian', 'Ravenkeeper', 'Recluse', 'Spy', 'Chef', 'Chef', 'Chef'])
+                game.doRolesSetup()
+
+                const imp = game.at(0)
+
+                test(`Has info on teammates`, game._atHasInfoWith(0, 'These are your teammates'))
+                game.startNight()
+                test(`Has info on bluffs`, imp.info.roles?.length == 3)
+                test(`Has no power on night 1`, imp.availableAction == null)
+                
+                game.startDay()
+                game.startNight()
+                test(`Has power night 2`, imp.availableAction != null)
+                imp.useAction(game, game.at(2))
+                game.startDay()
+                test(`Target is dead`, game.at(2).isDead)
+                test(`Has no info`, imp.info == null)
+
+                game.startNight()
+                test(`Has power`, imp.availableAction != null)
+                imp.useAction(game, imp)
+                game.startDay()
+                test(`Imp is dead`, imp.isDead)
+                test(`Spy is now imp`, game.at(5).getTrueRole().name == 'Imp')
+
+                game.startNight()
+                test(`New imp has no info`, game.at(5).info == null)
+                test(`New imp has power`, game.at(5).availableAction != null)
+                
             }
         },
         {

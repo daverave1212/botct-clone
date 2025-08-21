@@ -7,7 +7,7 @@ const DEFAULT_SCRIPTS = {
     'Trouble Brewing': getRoles().filter(role => role.difficulty == TROUBLE_BREWING).map(role => role.name),
     'Bad Moon Rising': getRoles().filter(role => role.difficulty == BAD_MOON_RISING).map(role => role.name),
     'Sects and Violets': getRoles().filter(role => role.difficulty == SECTS_AND_VIOLETS).map(role => role.name),
-    'My Custom Script': [    // TODO: Remove this and replace it
+    'Trouble Brewing Online': [    // TODO: Remove this and replace it
         'Washerwoman',
         'Librarian',
         'Investigator',

@@ -70,7 +70,24 @@ export const tips = [
     {
         type: InfoTypes.ROLES,
         roles: ['Moonchild'],
-        text: "Moonchild does not want to reveal they're a Moonchild early game, so they get killed. It can be a very powerful ability early game, but mid game it becomes dangerous."
+        text: "Moonchild may not want to reveal they're a Moonchild early game, so they get killed. It can be a very powerful ability early game, but mid game it becomes dangerous."
     },
-    
+    {
+        type: InfoTypes.ROLES,
+        roles: ['Moonchild'],
+        text: "Moonchild is an Outsider.<br>Is it good to say you're the Moonchild? Perhaps..."
+    },
+    {
+        type: InfoTypes.ROLES,
+        roles: ['Chef'],
+        text: "The Chef's information can be inaccurate due to the Spy or Recluse."
+    },
+    {
+        type: InfoTypes.ROLES,
+        text: "Please consider supporting team David by buying him a drink."
+    },
+    {
+        type: InfoTypes.ROLES,
+        text: "The game has been extensively tested through more than 135 automatic unit tests, with many edge cases tested!"
+    }
 ]

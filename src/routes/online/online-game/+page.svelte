@@ -4,23 +4,8 @@
         overflow: hidden;
     }
 
-    .less-390 {
-        display: none;
-    }
-    .more-390 {
-        display: unset;
-    }
     .gap-auto {
         gap: 2vw;
-    }
-    @media (max-width: 390px) {
-        .less-390 {
-            display: unset;
-            font-size: 1.5rem;
-        }
-        .more-390 {
-            display: none;
-        }
     }
 
     .me-button {

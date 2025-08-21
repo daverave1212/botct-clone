@@ -7,7 +7,14 @@ import { randomInt } from "crypto"
 import { percentChance } from "$lib/shared-lib/shared-utils"
 
 
-const IS_DEBUG = true
+let IS_DEBUG = false
+
+export function setIsDebug(val) {
+    IS_DEBUG = val
+}
+export function getIsDebug() {
+    return IS_DEBUG
+}
 
 
 function generateRandomRoomCode() {
@@ -102,6 +109,21 @@ class Player {
             this.role.afterAssignRole(game, this)
         }
     }
+    reassignRole(game, role, options={}) {
+        const { ignoreAssignEvent } = options 
+        role = role.name == null? getRole(role): role
+
+        this.role = role
+        this.secretRole = null
+        this.info = null
+        this.availableAction = null
+        this.hasOnlySecretRolePowers = false
+        if (ignoreAssignEvent) {
+            return
+        }
+        this.role?.afterAssignRole?.(game, this)
+    }
+
 
     isEvil() {
         if (this.changedAlignment == 'evil') {
@@ -175,8 +197,19 @@ class Player {
         return this.statusEffects.some(se => se.name == name)
     }
 
-    getPower(game) {
-        return this.getTrueRole()?.getPower?.() ?? 0
+    getPower() {
+        const game = getGame(this.roomCode) ?? null
+        if (game == null) {
+            console.error(`❌ unable to find game room ${this.roomCode}`)
+            return 0
+        }
+        if (this.getTrueRole() == null) {
+            return 0
+        }
+        if (this.getTrueRole().getPower == null) {
+            return 0
+        }
+        return this.getTrueRole()?.getPower(game, this)
     }
 
     applyAllMyDeathEventsAt(game, eventName, source) {
@@ -253,9 +286,10 @@ class Game {
 
     lastNotification
 
-    constructor(ownerName) {
+    constructor(ownerName, options={}) {
+        const { customRoomCode } = options
         this.ownerName = ownerName
-        this.roomCode = generateRandomRoomCode()
+        this.roomCode = customRoomCode ?? generateRandomRoomCode()
         this.scriptName = 'A Custom Script'
         this.scriptRoleNames = []
         this.privateKey = createRandomCode(6)
@@ -711,17 +745,21 @@ class Game {
         }, duration)
     }
     getTotalPowerDynamics() {
+        if (this.playersInRoom.some(p => p == null)) {
+            console.log(this.playersInRoom)
+            console.error('⭕ A player is null!!!')
+        }
         try {
-            const getTotalPower = players => players
-                .map(p => p.getPower())
-                .reduce((soFar, e) => soFar + e, 0)
-            const goodPower = getTotalPower(this.playersInRoom.filter(p => !p.isEvil()))
+            const getPowers = players => players.map(p => p.getPower())
+            const getTotalPower = players => players.map(p => p.getPower()).reduce((soFar, e) => soFar + e, 0)
+            const goods = this.playersInRoom.filter(p => !p.isEvil())
+            const goodPower = getTotalPower(goods)
             const evilPower = getTotalPower(this.playersInRoom.filter(p => p.isEvil()))
             return goodPower - evilPower
         } catch (e) {
             console.error('⭕ Error getting players power')
             console.error(e)
-            return null
+            return 0
         }
     }
     
@@ -811,9 +849,9 @@ export function createNewGame(player) {
     return game
 }
 
-export function makeTestTBGame() {
+export function makeTestTBGame(options) {
     const player = { name: 'Dave', src: 'none.png' }
-    const game = new Game(player.name)
+    const game = new Game(player.name, options)
     games[game.roomCode] = game
     game.scriptName = 'Trouble Brewing Modified'
     game.scriptRoleNames = [
