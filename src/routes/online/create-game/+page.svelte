@@ -13,7 +13,7 @@
     import { fetchGame } from "../../../lib/online-utils";
     import { customScripts, getCustomScriptRoleNames } from "../../../stores/custom-scripts-store";
     import { me } from "../../../stores/online/local/me";
-    import { roomCode } from "../../../stores/online/local/room";
+    import { roomCode, scriptName } from "../../../stores/online/local/room";
     import { goto } from '$app/navigation';
 
     let selectedScriptName = Object.keys($customScripts)[0]
@@ -32,6 +32,7 @@
         // privateKey is the same for the owner and the game
         $me = {...$me, privateKey: response.privateKey }
         $roomCode = response.roomCode
+        $scriptName = selectedScriptName
         setTimeout(() => {
             goto('/online/online-game')
         }, 250)
