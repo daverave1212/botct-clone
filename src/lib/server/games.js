@@ -262,6 +262,7 @@ class Player {
 
 
 export const games = {}
+export const getGames = () => games
 class Game {
 
     ownerName
