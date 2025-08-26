@@ -59,11 +59,12 @@ export function getCustomScriptRoleNames(scriptName) {
 export function setCustomScript(scriptName, roleNamesOrIs) {
     if (!Array.isArray(roleNamesOrIs)) {
         console.log({roleNamesOrIs})
-        alert(`Internal error: roles given are not an array but ${typeof roleNamesOrIs}. Printed object to console.`)
+        const error = `Internal error: roles given are not an array but ${typeof roleNamesOrIs}. Printed object to console.`
+        throw new Error(error)
     }
     if (roleNamesOrIs == null || roleNamesOrIs.length == 0) {
         alert("No roles given.")
-        return
+        throw new Error("No roles given")
     }
     console.log({roleNamesOrIs})
     let roleNames = roleNamesOrIs

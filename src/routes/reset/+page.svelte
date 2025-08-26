@@ -17,7 +17,6 @@
 <script>
     import { page } from '$app/stores'
     import { addedPlayers } from "../../stores/added-players-store";
-    import { customScripts, resetCustomScripts } from '../../stores/custom-scripts-store';
     import { rolesDistribution } from '../../stores/roles-store';
     import { browser } from '$app/environment'
 

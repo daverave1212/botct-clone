@@ -7,7 +7,6 @@ export async function POST({ request, url, params }) {
     const { emoji, color } = data.me
     const { pregameDuration, nightDuration } = data
 
-    console.log({emoji})
     const player = { ...getRequestUser(request), emoji, color }
     console.log(player.emoji)
 
