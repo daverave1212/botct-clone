@@ -35,6 +35,7 @@
     import { roomCode, scriptName } from '../../../stores/online/local/room.js';
     import { getCustomScriptRoleNames, setCustomScript } from '../../../stores/custom-scripts-store.js';
     import SafeButton from '../../../components-standalone/SafeButton.svelte';    
+    import { onMount } from 'svelte';
 
     const shadeCombinations = [
         { s: 0, l: 0 },
@@ -60,6 +61,10 @@
     let luminosityValue = 50
     
     $: myColor = `hsl(${colorRangeValue}, ${saturationValue}%, ${luminosityValue}%)`
+
+    onMount(() => {
+        $me = {...$me, color: myColor }
+    })
 
     me.subscribe(newMe => {
         cachedChosenIconSrc = newMe.src
