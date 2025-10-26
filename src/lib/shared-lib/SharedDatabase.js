@@ -182,7 +182,7 @@ export const getRoles = () => {
                 for (let i = 1; i < playersPlus1.length; i++) {
                     const prevPlayer = playersPlus1[i-1]
                     const thisPlayer = playersPlus1[i]
-                    if (prevPlayer.isRegisteredAsEvil() && thisPlayer.isRegisteredAsEvil()) {
+                    if (prevPlayer?.isRegisteredAsEvil() && thisPlayer?.isRegisteredAsEvil()) {
                         nPairsFound += 1
                     }
                 }
@@ -525,6 +525,13 @@ export const getRoles = () => {
             },
             onPlayerAction(game, me, actionData) {
                 let chosenPlayer = game.getPlayer(actionData)
+                if (chosenPlayer == null) {
+                    me.info = {
+                        type: InfoTypes.ROLES,
+                        text: "Something went wrong! Sorry for that! Try again next night. (chosen player was null)"
+                    }
+                    return
+                }
 
                 if (me.actionState == 'choosing-first') {
                     me.firstChosenPlayerName = chosenPlayer.name
@@ -655,7 +662,7 @@ export const getRoles = () => {
             "name": "Grandmother",
             "difficulty": BAD_MOON_RISING,
             getPower: (game, me) => {
-                const grandson = game?.playersInRoom?.find(p => p.hasStatus('Grandson'))
+                const grandson = game?.playersInRoom?.find(p => p?.hasStatus('Grandson'))
                 const isGrandsonDead = grandson?.isDead ?? false
                 if (isGrandsonDead && me.isDead) {
                     return 0
@@ -672,7 +679,7 @@ export const getRoles = () => {
                     return
                 }
                 player.didUsePower = true
-                let townsfolks = game.getTownsfolk().filter(p => p.name != player.name)
+                let townsfolks = game.getTownsfolk().filter(p => p != null && p.name != player.name)
 
                 if (player.isDrunkOrPoisoned()) {
                     townsfolks = game.getPlayersExcept([player.name])
@@ -762,7 +769,7 @@ export const getRoles = () => {
             "effect": "You start knowing that 1 of 2 players is a particular Minion.",
             getPower: (game, me) => me.isDead? 0.25: 1,
             onSetup: function(game, player) {
-                const minions = game.getPlayersThatRegisterAsEvil().filter(p => !p.role?.isDemon)
+                const minions = game.getPlayersThatRegisterAsEvil().filter(p => p != null && !p.role?.isDemon)
                 let randomMinion = randomOf(...minions)
                 let minionRoleName = randomMinion?.inspectRole()?.name
                 
@@ -856,7 +863,7 @@ export const getRoles = () => {
                 
                 if (player.isDrunkOrPoisoned()) {
                     randomOutsider = randomOf(...game.getPlayersExcept([player.name]))
-                    outsiderRoleName = randomOf(...game.getScriptRoleObjects().filter(r => r.isOutsider))
+                    outsiderRoleName = randomOf(...game.getScriptRoleObjects().filter(r => r != null && r.isOutsider))
                     if (game.isRoleInScript('Drunk') && percentChance(50)) {
                         outsiderRoleName = 'Drunk'
                     }
@@ -894,6 +901,23 @@ export const getRoles = () => {
 
                 game.setPlayersAndRoles(['Librarian', 'Fool', 'Fool', 'Fool', 'Drunk', 'Fool'])
                 game.doRolesSetup()
+                console.log(game.at(0).info)
+                console.log(game.at(4).getTrueRole().name)
+
+                const drunk = game.at(4)
+                function getDrunksRole() {
+                    if (drunk.role == null) {
+                        console.log(`  It's ${drunk.secretRole.name} because drunk.role == ${drunk.role?.name}`)
+                        return drunk.secretRole
+                    }
+                    if (drunk.role.onGetTrueRole != null) {
+                        console.log(`  It has a function! It's ${drunk.role.getTrueRole()}`)
+                        return drunk.role.getTrueRole()
+                    }
+                    console.log(`  It's just ${drunk.role.name}`)
+                    return drunk.role
+                }
+
                 test(`Drunk`, game._atHasInfoWith(0, 'Either'))
                 test(`Drunk`, game._atHasInfoWith(0, 'Drunk'))
             }
@@ -1546,8 +1570,8 @@ export const getRoles = () => {
             onSetup: function(game, player) {
                 let randomTF = randomOf(...game
                     .getPlayersThatRegisterAsGood()
-                    .filter(p => !p.inspectRole().isOutsider)
-                    .filter(p => p.name != player.name)
+                    .filter(p => !p.inspectRole()?.isOutsider)
+                    .filter(p => p.name != player?.name)
                 )
                 
                 if (player.isDrunkOrPoisoned()) {
@@ -1567,11 +1591,11 @@ export const getRoles = () => {
                 
                 const playersDisplayed = randomizeArray([randomTF, randomPlayer])
 
-                let tfRoleName = randomTF.inspectRole().name
+                let tfRoleName = randomTF.inspectRole()?.name
                 if (player.isDrunkOrPoisoned()) {
-                    const tfRolesNotInGame = game.getRolesNotInGame().filter(r => !r.isEvil && !r.isOutsider)
+                    const tfRolesNotInGame = game.getRolesNotInGame().filter(r => r != null && !r.isEvil && !r.isOutsider)
                     if (tfRolesNotInGame.length == 0) {
-                        tfRoleName = randomOf(...game.getScriptRoleObjects().filter(r => !r.isEvil && !r.isOutsider && r.name != 'Washerwoman')).name
+                        tfRoleName = randomOf(...game.getScriptRoleObjects().filter(r => r != null && !r.isEvil && !r.isOutsider && r.name != 'Washerwoman'))?.name
                     } else {
                         tfRoleName = randomOf(...tfRolesNotInGame).name
                     }
@@ -1668,6 +1692,7 @@ export const getRoles = () => {
                     name: 'Drunk',
                     isPoisoned: true
                 })
+                me.onGetTrueRole = (me => me?.secretRole)
             }
         },
         {
@@ -1832,7 +1857,7 @@ export const getRoles = () => {
                 if (me.isDrunkOrPoisoned()) {
                     return me.getTrueRole()
                 }
-                return me.role
+                return me.secretRole
             },
             afterAssignRole(game, me) {
                 const rolesNotUsed = game.getRolesNotInGame()
@@ -1840,11 +1865,11 @@ export const getRoles = () => {
                 if (evilRolesNotInGame.length == 0) {
                     evilRolesNotInGame = game.getScriptRoleObjects().filter(r => r.isEvil)
                 }
-                const myNewRole = randomOf(...evilRolesNotInGame)
+                const myDisplayedRole = randomOf(...evilRolesNotInGame)
 
-                me.assignRoleLater(game, myNewRole, { ignoreAssignEvent: true })
-                me.secretRole = getRole('Recluse')
-                me.hasOnlySecretRolePowers = true
+                me.secretRole = myDisplayedRole
+                // me.assignRoleLater(game, myNewRole, { ignoreAssignEvent: true })
+                // me.hasOnlySecretRolePowers = true
             }
         },
         {
@@ -2366,7 +2391,10 @@ export const getRoles = () => {
             infoDuration: 'onNightEnd',
             getPower: (game, me) => me.isDead? 0: 2,
             onInspected(me) {
-                return me.role
+                if (me.isDrunkOrPoisoned()) {
+                    return me.getTrueRole()
+                }
+                return me.secretRole
             },
             afterAssignRole(game, me) {
                 const rolesNotUsed = game.getRolesNotInGame()
@@ -2382,9 +2410,9 @@ export const getRoles = () => {
                     myRole = getRole('Drunk')
                 }
 
-                me.hasOnlySecretRolePowers = true
-                me.secretRole = getRole('Spy')
-                me.assignRoleLater(game, myRole, { ignoreAssignEvent: true })
+                me.secretRole = myRole
+                // me.assignRoleLater(game, myRole, { ignoreAssignEvent: true })
+                // me.hasOnlySecretRolePowers = true
             },
             onNightStart(game, me) {
                 me.info = {
@@ -2505,7 +2533,6 @@ export const getRoles = () => {
                                 return
                             }
                             const minion = randomOf(...minions)
-                            console.log(`Assigning role Imp to ${minion.getTrueRole().name}`)
                             minion.reassignRole(game, getRole('Imp'))
                         }
                     }

@@ -11,6 +11,18 @@
     import { me } from '../../../stores/online/local/me.js';
     import { roomCode } from '../../../stores/online/local/room.js';
 
+    let result = null
+
+    function print(obj) {
+        console.log(obj)
+        try {
+            const str = JSON.stringify(obj, null, 4)
+            result = str
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
 </script>
 
 <div class="page margin-top-4">
@@ -19,26 +31,26 @@
         const response = await fetchGame('POST', '/api/game')
         $me = {...$me, privateKey: response.privateKey }
         $roomCode = response.roomCode
-        console.log({response, me: $me, roomCode: $roomCode})
+        print({response, me: $me, roomCode: $roomCode})
     }}>Create Game (and set private key and room code)</button>
 
     <button class="btn colorful" on:click={async () => {
         const roomCode = prompt('room code')
         const response = await fetchGame('GET', `/api/game/${roomCode}`)
-        console.log(response)
+        print(response)
     }}>Get Game (Prompt)</button>
 
     <button class="btn blue" on:click={async () => {
-        console.log($me)
+        print($me)
     }}>See $me</button>
 
     <button class="btn colorful" on:click={async () => {
         const response = await fetchGame('GET', `/api/game`)
-        console.log(response)
+        print(response)
     }}>See All Games</button>
 
     <button class="btn gray" on:click={async () => {
-        console.log({GamePhases})
+        print({GamePhases})
     }}>Check Shared Lib</button>
 
 
@@ -49,5 +61,9 @@
     <button class="btn red" on:click={async () => {
         fetchGame('GET', '/api/test')
     }}>Run tests</button>
+
+    <br/>
+    <br/>
+    <textarea value={result} cols="100" rows="70"></textarea>
 
 </div>

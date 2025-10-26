@@ -1,6 +1,7 @@
 
 
 <script>
+	import { fly } from 'svelte/transition';
     import InspectRoleDrawer from "../../components/InspectRoleDrawer.svelte";
     import RoleChooserManyDrawer from "../../components/RoleChooserManyDrawer.svelte";
     import RoleListWithRoles from "../../components/RoleListWithRoles.svelte";

@@ -73,7 +73,8 @@ class Player {
         this.poisonEffectHistory = []
 
         this.secretRole = null
-        this.hasOnlySecretRolePowers = false
+
+        this.onGetTrueRole = null
     }
 
     inspectRole() {
@@ -85,9 +86,7 @@ class Player {
     }
 
     useAction(game, actionData) {
-        const actionFunc = this.hasOnlySecretRolePowers?
-            this.secretRole?.onPlayerAction
-            :this?.role?.onPlayerAction
+        const actionFunc = this?.role?.onPlayerAction
         if (actionFunc == null) {
             return
         }
@@ -99,8 +98,16 @@ class Player {
     }
 
     assignRoleLater(game, role, options = {}) {
+        if (game == null) {
+            console.error(new Error(`Null game to assignRoleLater: ${eventName}.`))
+            return
+        }
         const { ignoreAssignEvent } = options 
         role = role.name == null? getRole(role): role
+        if (role == null) {
+            console.error(new Error(`Null role to assignRoleLater: ${eventName}.`))
+            return
+        }
         this.role = role
         if (ignoreAssignEvent) {
             return
@@ -110,14 +117,21 @@ class Player {
         }
     }
     reassignRole(game, role, options={}) {
+        if (game == null) {
+            console.error(new Error(`Null game to reassignRole: ${eventName}.`))
+            return
+        }
         const { ignoreAssignEvent } = options 
         role = role.name == null? getRole(role): role
+        if (role == null) {
+            console.error(new Error(`Null role to reassignRole: ${eventName}.`))
+            return
+        }
 
         this.role = role
         this.secretRole = null
         this.info = null
         this.availableAction = null
-        this.hasOnlySecretRolePowers = false
         if (ignoreAssignEvent) {
             return
         }
@@ -129,9 +143,7 @@ class Player {
         if (this.changedAlignment == 'evil') {
             return true
         }
-        return this.secretRole == null?
-            this.role?.isEvil
-            :this.secretRole.isEvil
+        return this.getTrueRole()?.isEvil
     }
 
     isRegisteredAsEvil() {
@@ -146,9 +158,13 @@ class Player {
         if (this.secretRole == null && this.role == null) {
             const msg = `Player ${this.name} has no role!`
             console.error(`⭕ ${msg}`)
+            return null
         }
-        if (this.secretRole != null) {
+        if (this.role == null) {
             return this.secretRole
+        }
+        if (this.onGetTrueRole != null) {
+            return this.onGetTrueRole(this)
         }
         return this.role
     }
@@ -174,7 +190,7 @@ class Player {
     }
 
     removeStatus(statusEffectName) {
-        this.statusEffects = this.statusEffects.filter(s => s.name != statusEffectName)
+        this.statusEffects = this.statusEffects.filter(s => s != null && s.name != statusEffectName)
     }
 
     poison(statusName='Poisoned', eventName='afterNightStart') {
@@ -213,7 +229,15 @@ class Player {
     }
 
     applyAllMyDeathEventsAt(game, eventName, source) {
-        const usedRole = this.hasOnlySecretRolePowers? this.getTrueRole(): this.role
+        if (game == null) {
+            console.error(new Error(`Null game to applyAllMyDeathEventsAt: ${eventName}.`))
+            return
+        }
+        const usedRole = this.getTrueRole()
+        if (usedRole == null) {
+            console.error(new Error(`Player at applyAllMyDeathEventsAt ${this.name} has no role!`))
+            return
+        }
         const player = this
         for (const statusEffect of [...player.statusEffects]) {
             if (statusEffect[eventName] != null) {
@@ -235,7 +259,15 @@ class Player {
     }
 
     applyAllMyEventsAt(game, eventName) {
-        const usedRole = this.hasOnlySecretRolePowers? this.getTrueRole(): this.role
+        if (game == null) {
+            console.error(new Error(`Null game to applyAllMyEventsAt: ${eventName}.`))
+            return
+        }
+        const usedRole = this.getTrueRole()
+        if (usedRole == null) {
+            console.error(new Error(`Player ${this.name} has no role!`))
+            return
+        }
         if (usedRole.actionDuration == eventName) {
             this.availableAction = null
         }
@@ -337,6 +369,11 @@ class Game {
 
     #applyAllEventsAt(eventName) {
         for (const player of this.getAlivePlayers()) {
+            if (player == null) {
+                this.sendNotification('error', 'A player does not exist!')
+                console.error('⭕ A player is null!')
+                continue
+            }
             player.applyAllMyEventsAt(this, eventName)
         }
     }
@@ -359,7 +396,15 @@ class Game {
         }
 
         const rolesToAssign = randomizeArray(this.getRolesToAssign())
+        if (this.playersInRoom?.find(p => p == null) != null) {
+            this.sendNotification('error', `A player was automatically kicked. Continuing.`)
+            this.playersInRoom = this.playersInRoom?.filter(p => p != null)
+        }
         for (let i = 0; i < rolesToAssign.length; i++) {
+            if (rolesToAssign[i] == null) {
+                this.sendNotification('error', `A player was assigned no role. Please restart game.`)
+                continue
+            }
             this.playersInRoom[i].role = rolesToAssign[i]
         }
 
@@ -448,7 +493,7 @@ class Game {
         this.playersInRoom.push(player)
     }
     hasPlayer(playerName) { 
-        const playersByThatName = this.playersInRoom.filter(p => p.name == playerName)
+        const playersByThatName = this.playersInRoom.filter(p => p?.name == playerName)
         if (playersByThatName.length == 0) {
             return false
         }
@@ -644,9 +689,19 @@ class Game {
     }
 
     tryKillPlayer(playerOrName, source) {
+        if (playerOrName == null) {
+            console.error(`tryKillPlayer given null playerOrName`)
+            this.sendNotification('error', `Player not found. Continuing.`)
+            return
+        }
         const player = typeof playerOrName === 'string'? this.getPlayer(playerOrName): this.getPlayer(playerOrName.name)
+        if (source == null) {
+            source = { type: SourceOfDeathTypes.OTHER }
+            console.log(`No killing source killing ${player?.name}. Continuing...`)
+            this.sendNotification('error', `No killing source. Continuing...`)
+        }
         if (source?.type == null) {
-            console.log(source)
+            console.error(source)
             throw `⭕ Null source or source.type for tryKillPlayer ${player.role?.name} (${player.name}). Source printed above.`
         }
 
@@ -654,6 +709,7 @@ class Game {
 
         if (player == null) {
             this.sendNotification('error', `Player ${playerOrName} not found.`)
+            return
         }
         if (player.role == null) {
             return
@@ -714,9 +770,7 @@ class Game {
         if (player == null) {
             return 404
         }
-        const actionFunc = player.hasOnlySecretRolePowers?
-            player?.secretRole?.onPlayerAction
-            :player?.role?.onPlayerAction
+        const actionFunc = player.getTrueRole()?.onPlayerAction
         if (actionFunc == null) {
             return 400
         }

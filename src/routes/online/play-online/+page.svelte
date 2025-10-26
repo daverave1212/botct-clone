@@ -36,6 +36,9 @@
     import { getCustomScriptRoleNames, setCustomScript } from '../../../stores/custom-scripts-store.js';
     import SafeButton from '../../../components-standalone/SafeButton.svelte';    
     import { onMount } from 'svelte';
+    import Toaster from '../../../components-standalone/Toaster.svelte';
+
+    let showToaster = () => {}
 
     const shadeCombinations = [
         { s: 0, l: 0 },
@@ -90,8 +93,22 @@
         cachedChosenEmoji = emojiStr
     }
 
+    function areNameAndEmojiValid() {
+        if ($me.name == 'Default' || $me.name.trim().length == 0) {
+            showToaster(`error`, `Please input your name!`)
+            return false
+        }
+        if ($me.emoji == '❓') {
+            showToaster(`error`, 'Change your emoji!')
+            return false
+        }
+        return true
+    }
 
     async function onJoin() {
+        if (!areNameAndEmojiValid()) {
+            return
+        }
         const inputRoomCode = prompt('Enter room code.')
         if (inputRoomCode.trim().length == 0) {
             return
@@ -109,11 +126,18 @@
     }
 
     async function onCreate() {
+        if (!areNameAndEmojiValid()) {
+            return
+        }
         $me = {...$me, color: myColor}
-        goto('/online/create-game')
+        setTimeout(() => {
+            goto('/online/create-game')
+        }, 250);
     }
 
 </script>
+
+<Toaster setShowToaster={func => showToaster = func}/>
 
 <DrawerPage isOpen={isEmojiChooserOpen} on:click={() => {
     isEmojiChooserOpen = false

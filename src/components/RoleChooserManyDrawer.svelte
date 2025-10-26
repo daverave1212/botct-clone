@@ -25,9 +25,6 @@
     export let onClickOnRoleName
     export let onClickOutside
 
-    $: {
-        console.log({roles})
-    }
 
     function onPortraitClick(i, name) {
         if (roles[i].isValid == false) {
