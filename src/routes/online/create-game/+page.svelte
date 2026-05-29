@@ -18,8 +18,8 @@
 
     let selectedScriptName = Object.keys($customScripts)[0]
     
-    let pregameDuration = 5
-    let nightDuration = 45
+    let pregameDuration = 30
+    let nightDuration = 30
 
     async function onCreateGame() {
         if (selectedScriptName == null) {
@@ -58,9 +58,11 @@
     <div class="flex wrap gap-1 padding-1">
         {#each Object.keys($customScripts) as scriptName (scriptName)}
             {@const btnColor = selectedScriptName == scriptName? 'colorful': 'blue'}
-            <button class="btn {btnColor}" on:click={() => {
-                selectedScriptName = scriptName
-            }}>{scriptName}</button>
+            {#if scriptName.includes('Online')}
+                <button class="btn {btnColor}" on:click={() => {
+                    selectedScriptName = scriptName
+                }}>{scriptName}</button>
+            {/if}
         {/each}
     </div>
 

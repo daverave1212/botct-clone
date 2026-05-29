@@ -1,0 +1,349 @@
+[
+  {
+    "name": "Acrobat",
+    "effect": "Each night*, choose a player: if they are or become drunk or poisoned tonight, you die.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Alchemist",
+    "effect": "You have a Minion ability. When using this, the Storyteller may prompt you to choose differently.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Alsaahir",
+    "effect": "Each day, if you publicly guess which players are Minion(s) and which are Demon(s), good wins.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Amnesiac",
+    "effect": "You do not know what your ability is. Each day, privately guess what it is: you learn how accurate you are.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Atheist",
+    "effect": "The Storyteller can break the game rules, and if executed, good wins, even if you are dead. [No evil characters]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Balloonist",
+    "effect": "Each night, you learn a player of a different character type than last night. [+0 or +1 Outsider]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Banshee",
+    "effect": "If the Demon kills you, all players learn this. From now on, you may nominate twice per day and vote twice per nomination.”",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Bounty Hunter",
+    "effect": "You start knowing 1 evil player. If the player you know dies, you learn another evil player tonight. [1 Townsfolk is evil]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Cannibal",
+    "effect": "You have the ability of the recently killed executee. If they are evil, you are poisoned until a good player dies by execution.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Choirboy",
+    "effect": "If the Demon kills the King, you learn which player is the Demon. [+the King]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Cult Leader",
+    "effect": "Each night, you become the alignment of an alive neighbor. If all good players choose to join your cult, your team wins.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Engineer",
+    "effect": "Once per game, at night, choose which Minions or which Demon is in play.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Farmer",
+    "effect": "When you die at night, an alive good player becomes a Farmer.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Fisherman",
+    "effect": "Once per game, during the day, visit the Storyteller for some advice to help your team win.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "General",
+    "effect": "Each night, you learn which alignment the Storyteller believes is winning: good, evil, or neither.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "High Priestess",
+    "effect": "Each night, learn which player the Storyteller believes you should talk to most.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Huntsman",
+    "effect": "Once per game, at night, choose a living player: the Damsel, if chosen, becomes a not-in-play Townsfolk. [+the Damsel]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "King",
+    "effect": "Each night, if the dead equal or outnumber the living, you learn 1 alive character. The Demon knows you are the King.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Knight",
+    "effect": "You start knowing 2 players that are not the Demon.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Lycanthrope",
+    "effect": "Each night*, choose an alive player. If good, they die & the Demon doesn’t kill tonight. One good player registers as evil.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Magician",
+    "effect": "The Demon thinks you are a Minion. Minions think you are a Demon.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Nightwatchman",
+    "effect": "Once per game, at night, choose a player: they learn you are the Nightwatchman.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Noble",
+    "effect": "You start knowing 3 players, 1 and only 1 of which is evil.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Pixie",
+    "effect": "You start knowing 1 in-play Townsfolk. If you were mad that you were this character, you gain their ability when they die.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Poppy Grower",
+    "effect": "Minions & Demons do not know each other. If you die, they learn who each other are that night.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Preacher",
+    "effect": "Each night, choose a player: a Minion, if chosen, learns this. All chosen Minions have no ability.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Shugenja",
+    "effect": "You start knowing if your closest evil player is clockwise or anti-clockwise. If equidistant, this info is arbitrary.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Steward",
+    "effect": "You start knowing 1 good player.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Village Idiot",
+    "effect": "Each night, choose a player: you learn their alignment. [+0 to +2 Village Idiots. 1 of the extras is drunk]",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Damsel",
+    "effect": "All Minions know a Damsel is in play. If a Minion publicly guesses you (once), your team loses.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Golem",
+    "effect": "You may only nominate once per game. When you do, if the nominee is not the Demon, they die.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Hatter",
+    "effect": "If you died today or tonight, the Minion & Demon players may choose new Minion & Demon characters to be.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Heretic",
+    "effect": "Whoever wins, loses & whoever loses, wins, even if you are dead.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Ogre",
+    "effect": "On your 1st night, choose a player (not yourself): you become their alignment (you dont know which) even if drunk or poisoned.”",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Plague Doctor",
+    "effect": "When you die, the Storyteller gains a Minion ability.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Politician",
+    "effect": "If you were the player most responsible for your team losing, you change alignment & win, even if dead.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Puzzlemaster",
+    "effect": "1 player is drunk, even if you die. If you guess (once) who it is, learn the Demon player, but guess wrong & get false info.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Snitch",
+    "effect": "Each Minion gets 3 bluffs.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "Zealot",
+    "effect": "If there are 5 or more players alive, you must vote for every nomination.",
+    "difficulty": "EXPERIMENTAL"
+  },
+  {
+    "name": "boffin",
+    "effect": "The Demon (even if drunk or poisoned) has a not-in-play good characters ability. You both know which.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Boomdandy",
+    "effect": "If you are executed, all but 3 players die. After a 10 to 1 countdown, the player with the most players pointing at them, dies.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Fearmonger",
+    "effect": "Each night, choose a player: if you nominate & execute them, their team loses. All players know if you choose a new player.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Goblin",
+    "effect": "If you publicly claim to be the Goblin when nominated & are executed that day, your team wins.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Harpy",
+    "effect": "Each night, choose 2 players: tomorrow, the 1st player is mad that the 2nd is evil, or one or both might die.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Marionette",
+    "effect": "You think you are a good character, but you are not. The Demon knows who you are. [You neighbor the Demon]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Mezepheles",
+    "effect": "You start knowing a secret word. The 1st good player to say this word becomes evil that night.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Organ Grinder",
+    "effect": "All players keep their eyes closed when voting and the vote tally is secret. Each night, choose if you are drunk until dusk.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Psychopath",
+    "effect": "Each day, before nominations, you may publicly choose a player: they die. If executed, you only die if you lose roshambo.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Summoner",
+    "effect": "You get 3 bluffs. On the 3rd night, choose a player: they become an evil Demon of your choice. [No Demon]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Vizier",
+    "effect": "All players know you are the Vizier. You cannot die during the day. If good voted, you may choose to execute immediately.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Widow",
+    "effect": "On your 1st night, look at the Grimoire & choose a player: they are poisoned. 1 good player knows a Widow is in play.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Wizard",
+    "effect": "Once per game, choose to make a wish. If granted, it might have a price & leave a clue as to its nature.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Xaan",
+    "effect": "On night X, all Townsfolk are poisoned until dusk. [X Outsiders]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true
+  },
+  {
+    "name": "Al-Hadikhia",
+    "effect": "Each night*, you may choose 3 players (all players learn who): each silently chooses to live or die, but if all live, all die.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Kazali",
+    "effect": "Each night*, choose a player: they die. [You choose which players are which Minions. -? to +? Outsiders]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Legion",
+    "effect": "Each night*, a player might die. Executions fail if only evil voted. You register as a Minion too. [Most players are Legion]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Leviathan",
+    "effect": "If more than 1 good player is executed, evil wins. All players know you are in play. After day 5, evil wins.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Lil' Monsta",
+    "effect": "Each night, Minions choose who babysits Lil Monsta & is the Demon. Each night*, a player might die. [+1 Minion]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Lleech",
+    "effect": "Each night*, choose a player: they die. You start by choosing a player: they are poisoned. You die if & only if they are dead. ",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Lord of Typhon",
+    "effect": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. There can be any number of outsiders]",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Ojo",
+    "effect": "Each night*, choose a character: they die. If they are not in play, the Storyteller chooses who dies.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Riot",
+    "effect": "On day 3, Minions become Riot & nominees die but nominate an alive player immediately. This must happen.",
+    "difficulty": "EXPERIMENTAL",
+    "isEvil": true,
+    "isDemon": true
+  },
+  {
+    "name": "Yaggababble",
+    "effect": "You start knowing a secret phrase. For each time you said it publicly today, a player might die.",
+    "difficulty": "EXPERIMENTAL"
+  }
+]

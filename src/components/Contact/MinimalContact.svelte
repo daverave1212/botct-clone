@@ -35,9 +35,9 @@
 </script>
 
 
-<div class="contact shadowed rounded bg-white">
+<div class="contact shadowed rounded bg-white" on:click={toggleContent}>
     <div class="header {maybeDeadCls}">
-        <div class="picture-wrapper {saturationCls}" on:click={toggleContent}>
+        <div class="picture-wrapper {saturationCls}">
             <!-- svelte-ignore a11y-missing-attribute -->
             {#if color == null || emoji == null}
                 <img

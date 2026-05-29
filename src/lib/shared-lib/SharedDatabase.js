@@ -904,21 +904,16 @@ export const getRoles = () => {
                 console.log(game.at(0).info)
                 console.log(game.at(4).getTrueRole().name)
 
-                const drunk = game.at(4)
-                function getDrunksRole() {
-                    if (drunk.role == null) {
-                        console.log(`  It's ${drunk.secretRole.name} because drunk.role == ${drunk.role?.name}`)
-                        return drunk.secretRole
-                    }
-                    if (drunk.role.onGetTrueRole != null) {
-                        console.log(`  It has a function! It's ${drunk.role.getTrueRole()}`)
-                        return drunk.role.getTrueRole()
-                    }
-                    console.log(`  It's just ${drunk.role.name}`)
-                    return drunk.role
-                }
-
-                test(`Drunk`, game._atHasInfoWith(0, 'Either'))
+                test(`Drunk`, game._atHasInfoWith(0, 'Either'), `
+                    Outsiders in game: ${game.getOutsiders().length}
+                    4th (Drunk) player true role: ${game.at(4).getTrueRole().name}
+                    4th (Drunk) player secret role: ${game.at(4).secretRole.name}
+                    4th (Drunk) player role: ${game.at(4).role.name}
+                    4th (Drunk) player onGetTrueRole exists?: ${game.at(4).role.onGetTrueRole}
+                    4th (Drunk) player onGetTrueRole: ${game.at(4).role.onGetTrueRole?.()}
+                    4th (Drunk) player TEST: ${game.at(4).TEST}
+                    4th (Drunk) player full role: ${Object.keys(game.at(4).role).join(', ')}
+                `)
                 test(`Drunk`, game._atHasInfoWith(0, 'Drunk'))
             }
         },
@@ -1059,7 +1054,7 @@ export const getRoles = () => {
                     duration: StatusEffectDuration.UNTIL_NIGHT,
                     onDayStart: () => chosenPlayer.removeStatus('Protected'),
                     onDeath: (g, m, source) => {
-                        if (source?.type == SourceOfDeathTypes.DEMON_KILL) {
+                        if (source?.type == SourceOfDeathTypes.DEMON_KILL && !me.isDead) {
                             return false
                         }
                         return true
@@ -1692,7 +1687,12 @@ export const getRoles = () => {
                     name: 'Drunk',
                     isPoisoned: true
                 })
-                me.onGetTrueRole = (me => me?.secretRole)
+                me.onGetTrueRole = function(me) {
+                    if (me.secretRole != null) {
+                        return me.secretRole
+                    }
+                    return me.role
+                }
             }
         },
         {
@@ -1989,6 +1989,9 @@ export const getRoles = () => {
             ribbonColor: EVIL_COLOR,
             ribbonText: "EVIL",
             isEvil: true,
+            onSetup(game, me) {
+                showMeMyEvilTeammates(game, me)
+            },
             afterAssignRole(game, me) {
                 const outsidersNotUsed = randomizeArray(
                     game.getRolesNotInGame().filter(r => r.isOutsider)
@@ -2258,6 +2261,7 @@ export const getRoles = () => {
                 const randomTownsfolk = randomOf(...game.getAliveTownsfolk())
                 randomTownsfolk?.poison('Intoxicated', 'never')
                 me.chosenPlayerName = randomTownsfolk?.name
+                showMeMyEvilTeammates(game, me)
             },
             afterNightStart(game, me) {
                 if (game.roundNumber == 1) {
@@ -2334,6 +2338,9 @@ export const getRoles = () => {
             isEvil: true,
             infoDuration: 'onNightEnd',
             getPower: (game, me) => me.isDead? 0: 1.5,
+            onSetup(game, me) {
+                showMeMyEvilTeammates(game, me)
+            },
             onNightStart(game, me) {
                 if (me.didUsePower) {
                     return
@@ -2354,7 +2361,7 @@ export const getRoles = () => {
                         if (me.isDrunkOrPoisoned()) {
                             return
                         }
-                        if (!me.isDead && game.getAlivePlayers()?.length >= 5) {
+                        if (!me.isDead && game.getAlivePlayers()?.length >= 4) {    // 5 before demon death
                             me.assignRoleLater(game, demon.getTrueRole(), { ignoreAssignEvent: true })
                         }
                     }
@@ -2395,6 +2402,9 @@ export const getRoles = () => {
                     return me.getTrueRole()
                 }
                 return me.secretRole
+            },
+            onSetup(game, me) {
+                showMeMyEvilTeammates(game, me)
             },
             afterAssignRole(game, me) {
                 const rolesNotUsed = game.getRolesNotInGame()
@@ -2521,11 +2531,27 @@ export const getRoles = () => {
                 if (game.phase != GamePhases.NIGHT) {   // Prevent multiple requests
                     return
                 }
+
+                const resetMyAction = () => {
+                    me.availableAction = {
+                        type: ActionTypes.CHOOSE_PLAYER,
+                        clientDuration: ActionDurations.UNTIL_USED_OR_DAY
+                    }
+                }
+
                 const chosenPlayer = game.getPlayer(actionData?.name || actionData)
+
+                if (chosenPlayer == null) {
+                    resetMyAction()
+                    console.log({actionData})
+                    console.error('Player not found for imp onPlayerAction, actionData printed above')
+                    me.sendPersonalNotification('Player not found. Try again')
+                    return
+                }
 
                 chosenPlayer.addStatus({
                     name: "Targeted By Demon",
-                    onNightEnd: () => {
+                    onNightEnd: (game, chosenPlayer) => {
                         game.tryKillPlayer(chosenPlayer, { type: SourceOfDeathTypes.DEMON_KILL })
                         if (chosenPlayer.name == me.name && me.isDead) {
                             const minions = game.getAliveMinions()

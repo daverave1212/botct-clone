@@ -3,13 +3,18 @@ import { getRequestUser, response } from "../../../../../../../../lib/server/uti
 
 export async function POST({ request, params }) {
     const { game, player, statusCode } = findGameAndPlayerST(params)
-    if (statusCode != 200) {
-        return response(null, statusCode)
-    }
-    const user = getRequestUser(request)
-    const actionData = params.actionData
 
-    const sc = game.onPlayerActionST(user, player, actionData)
+    try {
+        if (statusCode != 200) {
+            return response(null, statusCode)
+        }
+        const user = getRequestUser(request)
+        const actionData = params.actionData
 
-    return response(null, sc)
+        const sc = game.onPlayerActionST(user, player, actionData)
+
+        return response(null, sc)
+    } catch (e) {
+        game.sendNotification('error', `${e}`)
+    }    
 }

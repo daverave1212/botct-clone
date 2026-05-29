@@ -65,6 +65,7 @@
     let isMyInfoRolesDrawerOpen = false
     let isActionChoosePlayerDrawerOpen = false
     let isAllRolesDrawerOpen = false
+    let isGameStarted = false
     let roleBeingInspected = null
 
     let winner = null
@@ -151,12 +152,19 @@
             showToaster('info', game.lastNotification.text)
         }
 
+        isGameStarted = game.phase != GamePhases.NOT_STARTED
         gameOwnerName = game.ownerName
         $playersInRoom = game.playersInRoom
         $phase = game.phase
         $scriptRoleNames = game.scriptRoleNames
 
         const newMe = game?.playersInRoom?.find(p => p.name == $me.name)
+
+        if ($me.personalNotifications?.length < newMe?.personalNotifications?.length) {
+            const myLastPersonalNotification = newMe?.personalNotifications?.[newMe?.personalNotifications.length - 1]
+            showToaster('warning', `${myLastPersonalNotification}`)
+        }
+
         if (newMe) {
             $me = newMe
         }
@@ -379,18 +387,18 @@
     <div class="margin-top-4">
         {#each ($playersInRoom ?? []) as player (player.name)}
 
-            <div style="width: 100%" class="flex-row gap-1">
+            <div style="width: 100%" class="flex-row gap-1" on:click={evt => {
+                evt.stopPropagation();
+                console.log(`Clicked on ${player.name}`)
+                isActionChoosePlayerDrawerOpen = false
+                actionChoosePlayer(player.name)
+            }}>
                 <MinimalContact
                     name={player.name}
                     emoji={player.emoji}
                     color={player.color}
                     isDead={player.isDead}
-                    on:contact-click={evt => {
-                        evt.stopPropagation();
-                        console.log(`Clicked on ${player.name}`)
-                        isActionChoosePlayerDrawerOpen = false
-                        actionChoosePlayer(evt.detail)
-                    }}
+                    on:contact-click={evt => {}}
                 ></MinimalContact>
             </div>
         {/each}
@@ -600,12 +608,15 @@
         {/each}
 
         {#if amIAdmin}
-            <button class="btn blue" on:click={startGame} style="position: relative;">
-                Start Game
-            </button>
-            <button class="btn colorful" on:click={endDay} style="position: relative;">
-                End Day
-            </button>
+            {#if !isGameStarted}
+                <button class="btn blue" on:click={startGame} style="position: relative;">
+                    Start Game
+                </button>
+            {:else}
+                <button class="btn colorful" on:click={endDay} style="position: relative;">
+                    End Day
+                </button>
+            {/if}
         {/if}
 
         {#if $roomCode != null}

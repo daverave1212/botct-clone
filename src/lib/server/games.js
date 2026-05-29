@@ -59,7 +59,7 @@ class Player {
         this.privateKey = privateKey
         this.roomCode = roomCode
 
-        this.role = null
+        this.role = null            // Role
         this.isPoisoned = false
         
         this.isDead = false
@@ -75,6 +75,8 @@ class Player {
         this.secretRole = null
 
         this.onGetTrueRole = null
+
+        this.personalNotifications = []
     }
 
     inspectRole() {
@@ -83,6 +85,20 @@ class Player {
             return trueRole.onInspected(this)
         }
         return trueRole
+    }
+    getTrueRole() {
+        if (this.secretRole == null && this.role == null) {
+            const msg = `Player ${this.name} has no role!`
+            console.error(`⭕ ${msg}`)
+            return null
+        }
+        if (this.onGetTrueRole != null) {
+            return this.onGetTrueRole(this)
+        }
+        if (this.role == null) {
+            return this.secretRole
+        }
+        return this.role
     }
 
     useAction(game, actionData) {
@@ -154,20 +170,7 @@ class Player {
         return this.getTrueRole()?.isOutsider
     }
 
-    getTrueRole() {
-        if (this.secretRole == null && this.role == null) {
-            const msg = `Player ${this.name} has no role!`
-            console.error(`⭕ ${msg}`)
-            return null
-        }
-        if (this.role == null) {
-            return this.secretRole
-        }
-        if (this.onGetTrueRole != null) {
-            return this.onGetTrueRole(this)
-        }
-        return this.role
-    }
+
 
     isTownsfolk() {
         return !this.isOutsider() && !this.isEvil()
@@ -204,6 +207,9 @@ class Player {
         })
     }
 
+    sendPersonalNotification(message) {
+        this.personalNotifications.push(message)
+    }
 
     addStatus(obj) {
         this.statusEffects.push(obj)
@@ -365,6 +371,7 @@ class Game {
         this.#applyAllEventsAt('onNightEnd')
         this.phase = GamePhases.DAY
         this.#applyAllEventsAt('onDayStart')
+        this.checkWinConditions()
     }
 
     #applyAllEventsAt(eventName) {
@@ -392,14 +399,20 @@ class Game {
 
     assignRoles() {
         if (IS_DEBUG) {
-            this.setTestPlayersWithRoles(['Fool', 'Fool', 'Fool', 'Fool', 'Fool'])
+            // Just add some extra players, roles dont matter. They're all fools
+            this.setTestPlayersWithRoles(['Fool', 'Imp', 'Fool', 'Fool', 'Fool', 'Fool'])
         }
 
         const rolesToAssign = randomizeArray(this.getRolesToAssign())
-        if (this.playersInRoom?.find(p => p == null) != null) {
+
+        // Pre-check for null players, just in case
+        const nNullPlayers = this.playersInRoom.filter(p => p == null)
+        if (nNullPlayers > 0) {
             this.sendNotification('error', `A player was automatically kicked. Continuing.`)
             this.playersInRoom = this.playersInRoom?.filter(p => p != null)
         }
+
+        // Assign roles
         for (let i = 0; i < rolesToAssign.length; i++) {
             if (rolesToAssign[i] == null) {
                 this.sendNotification('error', `A player was assigned no role. Please restart game.`)
@@ -410,14 +423,15 @@ class Game {
 
         if (IS_DEBUG) {
             const makeMeRole = (roleName) => {
-                const dude = this.playersInRoom.find(p => p.role?.name == roleName)
-                const dudeRole = dude.role
-                dude.role = this.playersInRoom[0].role
-                this.playersInRoom[0].role = dudeRole
+                const role = getRole(roleName)
+                const playerAlreadyWithThisRole = this.playersInRoom.find(p => p.role?.name == roleName)
+                if (playerAlreadyWithThisRole != null) {
+                    playerAlreadyWithThisRole.role = this.playersInRoom[0].role
+                }
+                this.playersInRoom[0].role = role
             }
 
-            this.playersInRoom[0].role = getRole('Fortune Teller')
-
+            makeMeRole('Imp')
         }
 
         this.#applyAllEventsAt('onAssignRole')
@@ -732,8 +746,6 @@ class Game {
         player.availableAction = null
         player.info = null
         player.applyAllMyDeathEventsAt(this, 'afterDeath', source)
-
-        this.checkWinConditions()
     }
     movePlayerUp(playerOrName) {
         const player = this.getPlayer(playerOrName)
@@ -832,13 +844,15 @@ class Game {
     }
     setTestPlayersWithRoles(arr) {
         for (let i = 0; i < arr.length; i++) {
-            const playerName = randomOf('Si', 'Ca', 'A', 'Vi', 'Lu', 'Pe', 'Cata', 'Andre', 'Co', 'Ra') + randomOf('lviu', 'lin', 'lex', 'ola', 'ca', 'na', 'dro', 'lbert', 'i', 'ia', 'smin', 'du')
+            const playerName =
+                randomOf('Si', 'Ca', 'A', 'Vi', 'Lu', 'Pe', 'Cata', 'Andre', 'Co', 'Ra', 'Ia', 'Cri', 'Cristi', 'Colo', 'Bog', 'Came', 'Car', 'Cla') +
+                randomOf('lviu', 'lin', 'lex', 'ola', 'ca', 'na', 'nel', 'nia', 'dro', 'lbert', 'i', 'ia', 'smin', 'du', 'dra', 'da', 'lina', 'lia', 'shan', 'dan', 'rina')
             // console.log(playerName)
             const playerIndex = this.playersInRoom.findIndex(p => p.name == playerName)
             // console.log(playerIndex)
             const playerTemplate = {
                 name: playerName,
-                emoji: randomOf(...'🦁🐯🦒🦊🦝🐮🐷🐗🐭🐹🐰🐻🐻‍❄️🐨🐼🐸🦓🐴🫎🫏🦄🐔🐲🐽🐾🐒🦍🦧🦮🐕‍🦺🐩🐕🐈🐈‍⬛🐅🐆🐎🦌🦬🦏🦛🦙🦣🐘🦡🦨'.split('')),
+                emoji: randomOf(...('🦁🐯🦒🦊🦝🐮🐷🐗🐭🐹🐰🐻🐻‍❄️🐨🐼🐸🦓🐴🫎🫏🦄🐔🐲🐽🐾🐒🦍🦧🦮🐕‍🦺🐩🐕🐈🐈‍⬛🐅🐆🐎🦌🦬🦏🦛🦙🦣🐘🦡🦨'.split(''))),
                 color: `hsl(${randomInt(1, 359)}, 70%, 60%)`
             }
             // console.log(playerTemplate)
